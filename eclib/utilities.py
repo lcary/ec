@@ -898,7 +898,7 @@ def diffuseImagesOutward(imageCoordinates, labelCoordinates, d,
 class JsonDataFile(object):
 
     @staticmethod
-    def _write_json(filename, data):
+    def _write_json(data, filename):
         with open(filename, 'w') as fp:
             json.dump(data, fp)
 
