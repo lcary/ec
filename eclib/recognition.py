@@ -1066,11 +1066,17 @@ class RecognitionModel(nn.Module):
                     if dreaming:
                         dreamLosses.append(losses[-1])
                         dreamMDL.append(descriptionLengths[-1])
-                        loss_data_cache.append({'count': training_examples_seen, 'loss': loss, 'dreaming': False})
+                        loss_data_cache.append({
+                            'count': training_examples_seen,
+                            'loss': loss.data.item(),
+                            'dreaming': True})
                     else:
                         realLosses.append(losses[-1])
                         realMDL.append(descriptionLengths[-1])
-                        loss_data_cache.append({'count': training_examples_seen, 'loss': loss, 'dreaming': True})
+                        loss_data_cache.append({
+                            'count': training_examples_seen,
+                            'loss': loss.data.item(),
+                            'dreaming': False})
                     if totalGradientSteps > steps:
                         break # Stop iterating, then print epoch and loss, then break to finish.
                         
