@@ -50,7 +50,7 @@ def add_plots_to_figure(args, files):
 def plot_real_losses(data, start_times):
     losses = [d['loss'] for epoch in data['records'] for d in epoch['losses'] if not d['dreaming']]
     counts = [d['count'] for epoch in data['records'] for d in epoch['losses'] if not d['dreaming']]
-    plt.plot(counts, losses, '.')
+    plt.plot(counts, losses)
     start_times.append('Train loss (start time: {} w/out dreaming)'.format(int(data['start_timestamp'])))
 
 
@@ -59,7 +59,7 @@ def plot_dream_losses(data, start_times):
     if not losses:
         return
     counts = [d['count'] for epoch in data['records'] for d in epoch['losses'] if d['dreaming']]
-    plt.plot(counts, losses, '.')
+    plt.plot(counts, losses)
     start_times.append('Train loss (start time: {} w/ dreaming)'.format(int(data['start_timestamp'])))
 
 
