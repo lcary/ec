@@ -1,4 +1,5 @@
 import inspect
+import json
 import signal
 import random
 import time
@@ -892,6 +893,42 @@ def diffuseImagesOutward(imageCoordinates, labelCoordinates, d,
                 d[i] += force
         constrainRadii()
     return d
+
+
+class JsonDataFile(object):
+
+    @staticmethod
+    def _write_json(filename, data):
+        with open(filename, 'w') as fp:
+            json.dump(data, fp)
+
+    @staticmethod
+    def _read_json(filename):
+        with open(filename, 'r') as fp:
+            return json.load(fp)
+
+
+class LossDataFile(JsonDataFile):
+    RECORDS_KEY = 'records'
+
+    @classmethod
+    def create(cls, data):
+        cls._write_json(data, cls._get_filepath())
+
+    @classmethod
+    def update(cls, data):
+        filepath = cls._get_filepath()
+        previous_data = cls._read_json(filepath)
+        records = previous_data.get(cls.RECORDS_KEY, [])
+        records.append(data)
+        previous_data[cls.RECORDS_KEY] = records
+        cls._write_json(data, cls._get_filepath())
+
+    @staticmethod
+    def _get_filepath():
+        filename = '{}_loss_data.json'.format(os.getpid())
+        return os.path.join('experimentOutputs', filename)
+
 
 if __name__ == "__main__":
     def f(n):

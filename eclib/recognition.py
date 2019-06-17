@@ -1013,6 +1013,9 @@ class RecognitionModel(nn.Module):
         classificationLosses = []
         totalGradientSteps = 0
         epochs = 9999999
+
+        LossDataFile.create({'start_timestamp': start})
+
         for i in range(1, epochs + 1):
             if timeout and time.time() - start > timeout:
                 break
@@ -1068,13 +1071,19 @@ class RecognitionModel(nn.Module):
                 eprint("(ID=%d): " % self.id, "\tvs MDL (w/o neural net)", mean(descriptionLengths))
                 if realMDL and dreamMDL:
                     eprint("\t\t(real MDL): ", mean(realMDL), "\t(dream MDL):", mean(dreamMDL))
+                elapsed_seconds = time.time() - start
                 eprint("(ID=%d): " % self.id, "\t%d cumulative gradient steps. %f steps/sec"%(totalGradientSteps,
-                                                                       totalGradientSteps/(time.time() - start)))
+                                                                       totalGradientSteps/(elapsed_seconds)))
                 eprint("(ID=%d): " % self.id, "\t%d-way auxiliary classification loss"%len(self.grammar.primitives),sum(classificationLosses)/len(classificationLosses))
+                LossDataFile.update({
+                    'epoch': i, 'losses': losses, 'real_losses': realLosses,
+                    'dream_losses': dreamLosses, 'timestamp': time.time(),
+                    'seconds_elapsed': elapsed_seconds, 'total_gradient_steps': totalGradientSteps
+                })
                 losses, descriptionLengths, realLosses, dreamLosses, realMDL, dreamMDL = [], [], [], [], [], []
                 classificationLosses = []
                 gc.collect()
-        
+
         eprint("(ID=%d): " % self.id, " Trained recognition model in",time.time() - start,"seconds")
         self.trained=True
         return self
