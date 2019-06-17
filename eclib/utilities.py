@@ -922,7 +922,7 @@ class LossDataFile(JsonDataFile):
         records = previous_data.get(cls.RECORDS_KEY, [])
         records.append(data)
         previous_data[cls.RECORDS_KEY] = records
-        cls._write_json(data, cls._get_filepath())
+        cls._write_json(previous_data, cls._get_filepath())
 
     @staticmethod
     def _get_filepath():

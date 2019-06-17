@@ -1014,7 +1014,7 @@ class RecognitionModel(nn.Module):
         totalGradientSteps = 0
         epochs = 9999999
 
-        LossDataFile.create({'start_timestamp': start})
+        LossDataFile.create({'start_timestamp': start, 'neural_net_params': self.parameters()})
 
         for i in range(1, epochs + 1):
             if timeout and time.time() - start > timeout:
