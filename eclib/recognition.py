@@ -1020,6 +1020,9 @@ class RecognitionModel(nn.Module):
             'max_gradient_steps': steps
         })
 
+        training_examples_seen = 0
+        loss_data_cache = []
+
         for i in range(1, epochs + 1):
             if timeout and time.time() - start > timeout:
                 break
@@ -1053,6 +1056,7 @@ class RecognitionModel(nn.Module):
                 if is_torch_invalid(loss):
                     eprint("Invalid real-data loss!")
                 else:
+                    training_examples_seen += 1
                     (loss + classificationLoss).backward()
                     classificationLosses.append(classificationLoss.data.item())
                     optimizer.step()
@@ -1062,9 +1066,11 @@ class RecognitionModel(nn.Module):
                     if dreaming:
                         dreamLosses.append(losses[-1])
                         dreamMDL.append(descriptionLengths[-1])
+                        loss_data_cache.append({'count': training_examples_seen, 'loss': loss, 'dreaming': False})
                     else:
                         realLosses.append(losses[-1])
                         realMDL.append(descriptionLengths[-1])
+                        loss_data_cache.append({'count': training_examples_seen, 'loss': loss, 'dreaming': True})
                     if totalGradientSteps > steps:
                         break # Stop iterating, then print epoch and loss, then break to finish.
                         
@@ -1080,10 +1086,10 @@ class RecognitionModel(nn.Module):
                                                                        totalGradientSteps/(elapsed_seconds)))
                 eprint("(ID=%d): " % self.id, "\t%d-way auxiliary classification loss"%len(self.grammar.primitives),sum(classificationLosses)/len(classificationLosses))
                 loss_data_file.update({
-                    'epoch': i, 'losses': losses, 'real_losses': realLosses,
-                    'dream_losses': dreamLosses, 'timestamp': time.time(),
+                    'epoch': i, 'losses': loss_data_cache, 'timestamp': time.time(),
                     'seconds_elapsed': elapsed_seconds, 'total_gradient_steps': totalGradientSteps
                 })
+                loss_data_cache = []
                 losses, descriptionLengths, realLosses, dreamLosses, realMDL, dreamMDL = [], [], [], [], [], []
                 classificationLosses = []
                 gc.collect()
