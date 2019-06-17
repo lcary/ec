@@ -1,3 +1,4 @@
+import datetime
 import inspect
 import json
 import signal
@@ -911,22 +912,21 @@ class JsonDataFile(object):
 class LossDataFile(JsonDataFile):
     RECORDS_KEY = 'records'
 
-    @classmethod
-    def create(cls, data):
-        cls._write_json(data, cls._get_filepath())
+    def __init__(self, initial_data):
+        self._filepath = self._get_filepath()
+        self._write_json(initial_data, self._filepath)
 
-    @classmethod
-    def update(cls, data):
-        filepath = cls._get_filepath()
-        previous_data = cls._read_json(filepath)
-        records = previous_data.get(cls.RECORDS_KEY, [])
+    def update(self, data):
+        previous_data = self._read_json(self._filepath)
+        records = previous_data.get(self.RECORDS_KEY, [])
         records.append(data)
-        previous_data[cls.RECORDS_KEY] = records
-        cls._write_json(previous_data, cls._get_filepath())
+        previous_data[self.RECORDS_KEY] = records
+        self._write_json(previous_data, self._filepath)
 
     @staticmethod
     def _get_filepath():
-        filename = '{}_loss_data.json'.format(os.getpid())
+        start_dt = datetime.datetime.now().strftime('%Y%m%d_T%H%M%S')
+        filename = '{}_PID{}_loss_data.json'.format(start_dt, os.getpid())
         return os.path.join('experimentOutputs', filename)
 
 

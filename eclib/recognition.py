@@ -1014,7 +1014,7 @@ class RecognitionModel(nn.Module):
         totalGradientSteps = 0
         epochs = 9999999
 
-        LossDataFile.create({
+        loss_data_file = LossDataFile({
             'start_timestamp': start,
             'timeout_seconds': timeout,
             'max_gradient_steps': steps
@@ -1079,7 +1079,7 @@ class RecognitionModel(nn.Module):
                 eprint("(ID=%d): " % self.id, "\t%d cumulative gradient steps. %f steps/sec"%(totalGradientSteps,
                                                                        totalGradientSteps/(elapsed_seconds)))
                 eprint("(ID=%d): " % self.id, "\t%d-way auxiliary classification loss"%len(self.grammar.primitives),sum(classificationLosses)/len(classificationLosses))
-                LossDataFile.update({
+                loss_data_file.update({
                     'epoch': i, 'losses': losses, 'real_losses': realLosses,
                     'dream_losses': dreamLosses, 'timestamp': time.time(),
                     'seconds_elapsed': elapsed_seconds, 'total_gradient_steps': totalGradientSteps
