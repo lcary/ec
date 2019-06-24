@@ -278,24 +278,14 @@ def callFork(f, *arguments, **kw):
     return ys[0]
 
 
-PARALLELPROCESSDATA = None
-
-
 def launchParallelProcess(f, *a, **k):
-    global PARALLELPROCESSDATA
-
-    PARALLELPROCESSDATA = [f, a, k]
-
     from multiprocessing import Process
-    p = Process(target=_launchParallelProcess, args=tuple([]))
+    p = Process(target=f, args=(a, k))
     p.start()
-    PARALLELPROCESSDATA = None
     return p
 
 
-def _launchParallelProcess():
-    global PARALLELPROCESSDATA
-    [f, a, k] = PARALLELPROCESSDATA
+def _launchParallelProcess(a, k):
     try:
         f(*a, **k)
     except Exception as e:
