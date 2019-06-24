@@ -942,7 +942,7 @@ def commandlineArguments(_=None,
                         featureExtractor=featureExtractor,
                         maximumFrontier=maximumFrontier,
                         cuda=cuda)
-    parser.add_argument("--multiprocessing-spawn",
+    parser.add_argument("-M", "--multiprocessing-spawn",
                         help="Set multiprocessing context to spawn to reduce memory consumption.",
                         default=False, action='store_true')
     if extras is not None:
