@@ -278,16 +278,16 @@ def callFork(f, *arguments, **kw):
     return ys[0]
 
 
-def launchParallelProcess(f, *a, **k):
+def launchParallelProcess(func, *a, **k):
     from multiprocessing import Process
-    p = Process(target=f, args=(a, k))
+    p = Process(target=_launchParallelProcess, args=(func, a, k))
     p.start()
     return p
 
 
-def _launchParallelProcess(a, k):
+def _launchParallelProcess(func, a, k):
     try:
-        f(*a, **k)
+        func(*a, **k)
     except Exception as e:
         eprint(
             "Exception in worker during forking:\n%s" %
