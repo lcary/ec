@@ -1002,7 +1002,11 @@ def commandlineArguments(_=None,
     else:
         # TODO: remove debug statement
         print('Mutiprocessing Spawn Context: Disabled')
-        
+
+    # Delete this option in `v` to avoid a TypeError later, since the `ecIterator` function
+    # receives all commandline arguments in `v` as kwargs.
+    del v['multiprocessing_spawn']
+
     return v
 
 def addTaskMetrics(result, path):
