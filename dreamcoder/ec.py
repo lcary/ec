@@ -999,9 +999,6 @@ def commandlineArguments(_=None,
         # be copied with each child process. With this option, only objects that are needed
         # are copied, but trade-off is that performance of creating new processes is slower.
         multiprocessing.set_start_method('spawn')
-    else:
-        # TODO: remove debug statement
-        print('Mutiprocessing Spawn Context: Disabled')
 
     # Delete this option in `v` to avoid a TypeError later, since the `ecIterator` function
     # receives all commandline arguments in `v` as kwargs.
