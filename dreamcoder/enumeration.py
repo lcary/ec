@@ -2,6 +2,7 @@ from dreamcoder.likelihoodModel import AllOrNothingLikelihoodModel
 from dreamcoder.grammar import *
 from dreamcoder.utilities import get_root_dir
 
+from functools import partial
 import os
 import traceback
 import subprocess
@@ -149,7 +150,8 @@ def multicoreEnumeration(g, tasks, _=None,
                 eprint("(python) Launching %s (%d tasks) w/ %d CPUs. %f <= MDL < %f. Timeout %f." %
                        (request, len(jobs[j]), allocation[j], lowerBounds[j], lowerBounds[j] + bi, thisTimeout))
                 stopwatches[j].start()
-                parallelCallback(wrapInThread(solver),
+                wrapped = partial(wrapInThread, solver)
+                parallelCallback(wrapped,
                                  q=q, g=g, ID=nextID,
                                  elapsedTime=stopwatches[j].elapsed,
                                  CPUs=allocation[j],
@@ -215,29 +217,27 @@ def multicoreEnumeration(g, tasks, _=None,
 
     return [frontiers[t] for t in tasks], bestSearchTime
 
-def wrapInThread(f):
+
+def wrapInThread(f, *a, **k):
     """
-    Returns a function that is designed to be run in a thread/threadlike process.
-    Result will be either put into the q
+    Returns a function that is designed to be run in a multiprocessing process.
     """
     import dill
 
-    def _f(*a, **k):
-        q = k.pop("q")
-        ID = k.pop("ID")
+    q = k.pop("q")
+    ID = k.pop("ID")
 
-        try:
-            r = f(*a, **k)
-            q.put(dill.dumps({"result": "success",
-                   "ID": ID,
-                   "value": r}))
-        except Exception as e:
-            q.put(dill.dumps({"result": "failure",
-                   "exception": e,
-                   "stacktrace": traceback.format_exc(),
-                   "ID": ID}))
-            return
-    return _f
+    try:
+        r = f(*a, **k)
+        q.put(dill.dumps({"result": "success",
+               "ID": ID,
+               "value": r}))
+    except Exception as e:
+        q.put(dill.dumps({"result": "failure",
+               "exception": e,
+               "stacktrace": traceback.format_exc(),
+               "ID": ID}))
+        return
 
 
 def solveForTask_ocaml(_=None,
