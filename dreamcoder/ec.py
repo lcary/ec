@@ -5,7 +5,7 @@ from dreamcoder.taskBatcher import *
 from dreamcoder.primitiveGraph import graphPrimitives
 import dill
 
-
+import multiprocessing
 import os
 import datetime
 
@@ -942,6 +942,9 @@ def commandlineArguments(_=None,
                         featureExtractor=featureExtractor,
                         maximumFrontier=maximumFrontier,
                         cuda=cuda)
+    parser.add_argument("--multiprocessing-spawn",
+                        help="Set multiprocessing context to spawn to reduce memory consumption.",
+                        default=False, action='store_true')
     if extras is not None:
         extras(parser)
     v = vars(parser.parse_args())
@@ -989,7 +992,16 @@ def commandlineArguments(_=None,
                "of those parameters.\n")
         sys.exit(0)
     del v["countParameters"]
-        
+
+    if v['multiprocessing_spawn']:
+        # Has the advantage of reducing the memory overhead of creating new multiprocessing
+        # processes. Without this option, the entire memory space of the parent process will
+        # be copied with each child process. With this option, only objects that are needed
+        # are copied, but trade-off is that performance of creating new processes is slower.
+        multiprocessing.set_start_method('spawn')
+    else:
+        # TODO: remove debug statement
+        print('Mutiprocessing Spawn Context: Disabled')
         
     return v
 
