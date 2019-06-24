@@ -2,11 +2,11 @@ import random
 import unittest
 from unittest import mock
 
-from eclib.enumeration import multicoreEnumeration
-from eclib.frontier import Frontier
-from eclib.grammar import Grammar
-from eclib.task import Task
-from eclib.type import arrow, tint
+from dreamcoder.enumeration import multicoreEnumeration
+from dreamcoder.frontier import Frontier
+from dreamcoder.grammar import Grammar
+from dreamcoder.task import Task
+from dreamcoder.type import arrow, tint
 
 
 class TestEnumerationMain(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestEnumerationMain(unittest.TestCase):
         self.assertEqual(frontiers, [])
         self.assertEqual(best_search_time, {})
 
-    @mock.patch('eclib.enumeration.subprocess')
+    @mock.patch('dreamcoder.enumeration.subprocess')
     def test_multicore_enumeration_single_task(self, mock_subprocess):
         mock_process = mock.MagicMock()
         response = '{"add1": []}'.encode('utf-8')
