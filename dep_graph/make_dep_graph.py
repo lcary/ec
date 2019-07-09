@@ -41,7 +41,7 @@ DOTFILE_TEMPLATE = """
 digraph dependency_graph {
     /* top-level graph settings */
     size="1000,1000";
-    ranksep=2; 
+    %s 
     node [shape=record];
     # splines="compound";
     # concentrate=true;
@@ -79,7 +79,9 @@ def get_dotfile_content(graph, ignore_depths=False, filtered_dependencies=None):
     if ignore_depths:
         depths = ''
         ranks = []
+        ranksep = ''
     else:
+        ranksep = 'ranksep=2;'
         try:
             max_depth = max(filter(None, [d['depth'] for d in graph.values()]))
         except ValueError:
@@ -89,7 +91,7 @@ def get_dotfile_content(graph, ignore_depths=False, filtered_dependencies=None):
             depths = ' -> '.join(['depth{}'.format(d) for d in range(max_depth+1)]) + ' [style=dotted];'
             ranks = get_dotfile_ranks(graph, symbol_map, max_depth, filtered_dependencies)
     edges, labels = get_dotfile_edges_labels(graph, symbol_map, filtered_dependencies, ignore_depths)
-    content = DOTFILE_TEMPLATE % (depths, '\n'.join(labels), '\n'.join(edges), '\n'.join(ranks))
+    content = DOTFILE_TEMPLATE % (ranksep, depths, '\n'.join(labels), '\n'.join(edges), '\n'.join(ranks))
     return content
 
 
