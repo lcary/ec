@@ -33,7 +33,7 @@ def multicoreEnumeration(g, tasks, _=None,
         "ocaml": solveForTask_ocaml,
         "pypy": solveForTask_pypy,
         "python": solveForTask_python,
-        "dreamcore": solveForTask_dreamcore
+        "julia": solveForTask_julia
     }
     assert solver in solvers, "You must specify a valid solver. options are ocaml, pypy, or python." 
 
@@ -371,7 +371,7 @@ def solveForTask_python(_=None,
                              lowerBound=lowerBound, upperBound=upperBound)
 
 
-def solveForTask_dreamcore(
+def solveForTask_julia(
         _=None,
         elapsedTime=0.,
         CPUs=1,
@@ -414,15 +414,15 @@ def solveForTask_dreamcore(
     message_dir = os.path.join(get_root_dir(), 'messages')
     os.makedirs(message_dir, exist_ok=True)
     pid = os.getpid()
-    ts = datetime.datetime.now().strftime('%Y%m%d_T%H:%M:%S')
-    message_name = 'dreamcore_enumeration_message_PID{}_{}.json'.format(pid, ts)
+    ts = datetime.datetime.now().strftime('%Y%m%d_T%H%M%S')
+    message_name = 'request_enumeration_PID{}_{}.json'.format(pid, ts)
     message_file = os.path.join(message_dir, message_name)
     with open(message_file, "w") as f:
         f.write(message)
 
-    dreamcore_dir = os.path.join(get_root_dir(), os.pardir, 'DreamCore.jl')
-    dreamcore_main = os.path.join(dreamcore_dir, 'bin', 'main.jl')
-    cmd = ['julia', '--project={}'.format(dreamcore_dir), dreamcore_main, 'enumerate', message_file]
+    project_dir = os.path.join(get_root_dir(), os.pardir, 'DreamCore.jl')
+    main_script = os.path.join(project_dir, 'bin', 'main.jl')
+    cmd = ['julia', '--project={}'.format(project_dir), main_script, 'enumerate', message_file]
     print(cmd)
 
     try:
@@ -435,7 +435,6 @@ def solveForTask_dreamcore(
             response_data = json.load(fp)
     except OSError as exc:
         raise exc
-
     except:
         print("response:", response)
         print("error:", error)

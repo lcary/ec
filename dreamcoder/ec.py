@@ -847,7 +847,7 @@ def commandlineArguments(_=None,
             "ocaml",
             "pypy",
             "python",
-            "dreamcore"
+            "julia"
         ],
         default=solver,
         help="""Solver for enumeration.
