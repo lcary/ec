@@ -495,7 +495,7 @@ class Grammar(object):
 
         if request.isArrow():
             v = request.arguments[0]
-            for l, newContext, b in self.enumeration(context, [v] + environment,
+            for l, newContext, b, last_stack in self.enumeration(context, [v] + environment,
                                                      request.arguments[1],
                                                      upperBound=upperBound, stack=new_stack,
                                                      lowerBound=lowerBound,
@@ -505,8 +505,8 @@ class Grammar(object):
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                     'yields:': str([l, newContext, Abstraction(b)])
                 }
-                new_stack = self.take_snapshot("enumeration():request.isArrow()", 2, kwargs, stack)
-                yield l, newContext, Abstraction(b)
+                new_stack = self.take_snapshot("enumeration():request.isArrow()", 2, kwargs, last_stack)
+                yield l, newContext, Abstraction(b), new_stack
 
         else:
             candidates = self.buildCandidates(request, context, environment,
@@ -547,7 +547,7 @@ class Grammar(object):
                 new_stack = self.take_snapshot("enumeration():else", 4, kwargs, stack)
 
                 xs = t.functionArguments()
-                for aL, aK, application in\
+                for aL, aK, application, last_stack in\
                     self.enumerateApplication(newContext, environment, p, xs,
                                               upperBound=upperBound + l, stack=new_stack,
                                               lowerBound=lowerBound + l,
@@ -557,8 +557,8 @@ class Grammar(object):
                         'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                         'yields:': str([aL + l, aK, application])
                     }
-                    new_stack = self.take_snapshot("enumeration():else:for", 5, kwargs, stack)
-                    yield aL + l, aK, application
+                    new_stack = self.take_snapshot("enumeration():else:for", 5, kwargs, last_stack)
+                    yield aL + l, aK, application, new_stack
         kwargs = {
             'context': str(context), 'environment': str(environment), 'request': str(request),
             'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
@@ -604,7 +604,7 @@ class Grammar(object):
                 }
                 new_stack = self.take_snapshot("enumerateApplication()", 7, kwargs, stack)
 
-                yield 0., context, function
+                yield 0., context, function, new_stack
             else:
                 kwargs = {
                     'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
@@ -622,7 +622,7 @@ class Grammar(object):
 
             argRequest = argumentRequests[0].apply(context)
             laterRequests = argumentRequests[1:]
-            for argL, newContext, arg in self.enumeration(context, environment, argRequest,
+            for argL, newContext, arg, last_stack in self.enumeration(context, environment, argRequest,
                                                           upperBound=upperBound, stack=new_stack,
                                                           lowerBound=0.,
                                                           maximumDepth=maximumDepth):
@@ -633,10 +633,10 @@ class Grammar(object):
                     'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
                 }
-                new_stack = self.take_snapshot("enumerateApplication():else:for", 9, kwargs, stack)
+                new_stack = self.take_snapshot("enumerateApplication():else:for", 9, kwargs, last_stack)
 
                 newFunction = Application(function, arg)
-                for resultL, resultK, result in self.enumerateApplication(newContext, environment, newFunction,
+                for resultL, resultK, result, last_stack in self.enumerateApplication(newContext, environment, newFunction,
                                                                           laterRequests,
                                                                           upperBound=upperBound + argL, stack=new_stack,
                                                                           lowerBound=lowerBound + argL,
@@ -648,8 +648,8 @@ class Grammar(object):
                         'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                         'yields:': str([resultL + argL, resultK, result])
                     }
-                    new_stack = self.take_snapshot("enumerateApplication():else:for:for", 10, kwargs, stack)
-                    yield resultL + argL, resultK, result
+                    new_stack = self.take_snapshot("enumerateApplication():else:for:for", 10, kwargs, last_stack)
+                    yield resultL + argL, resultK, result, new_stack
 
         kwargs = {
             'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),

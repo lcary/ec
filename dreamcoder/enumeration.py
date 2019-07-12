@@ -534,7 +534,7 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
             numberOfPrograms = 0
 
             current_stack = {'name': 'top', 'children': [], 'ts': ltime.time()}
-            for prior, _, p in g.enumeration(Context.EMPTY, [], request,
+            for prior, _, p, _ in g.enumeration(Context.EMPTY, [], request,
                                              maximumDepth=99,
                                              upperBound=budget, stack=current_stack['children'],
                                              lowerBound=previousBudget):
