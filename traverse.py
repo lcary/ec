@@ -1,11 +1,15 @@
-import sys
+import sys, time, os
+import json
 
 filename = sys.argv[1]
-import json
+
+try:
+    filter_mode = sys.argv[2]
+except IndexError:
+    filter_mode = False
 
 with open(filename) as f:
     d = json.load(f)
-
 
 def explore_children(n, path, log):
     if isinstance(n, list):
@@ -60,6 +64,45 @@ def explore_children(n, path, log):
             return
 
 
-path = []
-log = []
-explore_children(d["stacks"], path, log)
+def filter_explore_children(n, path, log, filter_list):
+    if isinstance(n, list):
+        for i in n:
+            filter_explore_children(i, path, log, filter_list)
+        return
+    else:
+        # print(n)
+        # return
+        try:
+            name = n["name"]
+        except KeyError:
+            name = "node({})".format(n["capture_point"])
+        except KeyError:
+            name = -1
+
+        children = n.get("children", [])
+
+        path = path + [name]
+        log = log + [{i:n[i] for i in n if i!='children'}]
+
+        if not children:
+            if n.get("capture_point") in filter_list:
+                fname = 'filter_explore_children_{}'.format(time.time())
+                fname = os.path.join('messages', 'traverse', fname)
+                with open(fname, 'w') as f:
+                    json.dump(log, f, indent=2)
+                print('wrote ', fname)
+        else:
+            for c in children:
+                filter_explore_children(c, path, log, filter_list)
+            return
+
+
+if filter_mode:
+    filter_list = list(map(int, filter_mode.split(',')))
+    path = []
+    log = []
+    filter_explore_children(d["stacks"], path, log, filter_list)
+else:
+    path = []
+    log = []
+    explore_children(d["stacks"], path, log)
