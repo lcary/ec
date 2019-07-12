@@ -396,6 +396,14 @@ def McCarthyPrimitives():
     ] + [Primitive(str(j), tint, j) for j in range(2)]
 
 
+def tiny_set():
+    "These are a few primitives used for debugging purposes only"
+    return [
+        Primitive("length", arrow(tlist(t0), tint), len),
+        Primitive("car", arrow(tlist(t0), t0), _car),
+    ]
+
+
 if __name__ == "__main__":
     bootstrapTarget()
     g = Grammar.uniform(McCarthyPrimitives())

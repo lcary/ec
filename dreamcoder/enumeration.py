@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from dreamcoder.likelihoodModel import AllOrNothingLikelihoodModel
 from dreamcoder.grammar import *
@@ -495,6 +496,10 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
     # we will never maintain maximumFrontier best solutions
     hits = [PQ() for _ in tasks]
 
+    import time as ltime
+    with open('state_%s.json' % str(os.getpid()), 'w') as fp:
+        json.dump({'request': str(request), 'programs': [], 'intermediates': [], 'start': ltime.time()}, fp, indent=2)
+
     starting = time()
     previousBudget = lowerBound
     budget = lowerBound + budgetIncrement
@@ -506,9 +511,15 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
             numberOfPrograms = 0
 
             for prior, _, p in g.enumeration(Context.EMPTY, [], request,
-                                             maximumDepth=99,
+                                             maximumDepth=3,
                                              upperBound=budget,
                                              lowerBound=previousBudget):
+                with open('state_%s.json' % str(os.getpid())) as f:
+                    jdata = json.load(f)
+                jdata['programs'].append({'prior': str(prior), 'context': str(_), 'program': str(p)})
+                with open('state_%s.json' % str(os.getpid()), 'w') as f:
+                    json.dump(jdata, f, indent=2)
+
                 descriptionLength = -prior
                 # Shouldn't see it on this iteration
                 assert descriptionLength <= budget

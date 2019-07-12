@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 
 from dreamcoder.frontier import *
@@ -451,6 +452,18 @@ class Grammar(object):
         return max( e.logLikelihood + self.logLikelihood(frontier.task.request, e.program)
                     for e in frontier )                
 
+    def take_snapshot(self, method_, cappt, kwargs):
+        with open('state_%s.json' % str(os.getpid())) as f:
+            jdata = json.load(f)
+        import time
+        d = {
+            'method': method_, 'capture_point': cappt,
+            'ts': time.time()}
+        d.update(kwargs)
+        jdata['intermediates'].append(d)
+
+        with open('state_%s.json' % str(os.getpid()), 'w') as f:
+            json.dump(jdata, f, indent=2)
 
     def enumeration(self,context,environment,request,upperBound,
                     maximumDepth=20,
@@ -459,6 +472,12 @@ class Grammar(object):
         if upperBound < 0 or maximumDepth == 1:
             return
 
+        kwargs = {
+            'context': str(context), 'environment': str(environment), 'request': str(request),
+            'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+        }
+        self.take_snapshot("enumeration()", 1, kwargs)
+
         if request.isArrow():
             v = request.arguments[0]
             for l, newContext, b in self.enumeration(context, [v] + environment,
@@ -466,16 +485,36 @@ class Grammar(object):
                                                      upperBound=upperBound,
                                                      lowerBound=lowerBound,
                                                      maximumDepth=maximumDepth):
+                kwargs = {
+                    'context': str(context), 'environment': str(environment), 'request': str(request),
+                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                    'yields:': str([l, newContext, Abstraction(b)])
+                }
+                self.take_snapshot("enumeration():request.isArrow()", 2, kwargs)
                 yield l, newContext, Abstraction(b)
 
         else:
             candidates = self.buildCandidates(request, context, environment,
                                               normalize=True)
 
+            kwargs = {
+                'context': str(context), 'environment': str(environment), 'request': str(request),
+                'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                'candidates': str([c for c in candidates])
+            }
+            self.take_snapshot("enumeration():else", 3, kwargs)
+
             for l, t, p, newContext in candidates:
                 mdl = -l
                 if not (mdl < upperBound):
                     continue
+
+                kwargs = {
+                    'context': str(context), 'environment': str(environment), 'request': str(request),
+                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                    'candidate': str([l, t, p, newContext])
+                }
+                self.take_snapshot("enumeration():else", 4, kwargs)
 
                 xs = t.functionArguments()
                 for aL, aK, application in\
@@ -483,6 +522,12 @@ class Grammar(object):
                                               upperBound=upperBound + l,
                                               lowerBound=lowerBound + l,
                                               maximumDepth=maximumDepth - 1):
+                    kwargs = {
+                        'context': str(context), 'environment': str(environment), 'request': str(request),
+                        'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                        'yields:': str([aL + l, aK, application])
+                    }
+                    self.take_snapshot("enumeration():else:for", 5, kwargs)
                     yield aL + l, aK, application
 
     def enumerateApplication(self, context, environment,
@@ -501,12 +546,31 @@ class Grammar(object):
         if originalFunction is None:
             originalFunction = function
 
+        kwargs = {
+            'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+            'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
+        }
+        self.take_snapshot("enumerateApplication()", 6, kwargs)
+
         if argumentRequests == []:
             if lowerBound <= 0. and 0. < upperBound:
+                kwargs = {
+                    'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                    'yields:': str([0., context, function])
+                }
+                self.take_snapshot("enumerateApplication()", 7, kwargs)
+
                 yield 0., context, function
             else:
                 return
         else:
+            kwargs = {
+                'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+                'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
+            }
+            self.take_snapshot("enumerateApplication():else", 8, kwargs)
+
             argRequest = argumentRequests[0].apply(context)
             laterRequests = argumentRequests[1:]
             for argL, newContext, arg in self.enumeration(context, environment, argRequest,
@@ -516,6 +580,12 @@ class Grammar(object):
                 if violatesSymmetry(originalFunction, arg, argumentIndex):
                     continue
 
+                kwargs = {
+                    'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
+                }
+                self.take_snapshot("enumerateApplication():else:for", 9, kwargs)
+
                 newFunction = Application(function, arg)
                 for resultL, resultK, result in self.enumerateApplication(newContext, environment, newFunction,
                                                                           laterRequests,
@@ -524,6 +594,12 @@ class Grammar(object):
                                                                           maximumDepth=maximumDepth,
                                                                           originalFunction=originalFunction,
                                                                           argumentIndex=argumentIndex + 1):
+                    kwargs = {
+                        'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+                        'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                        'yields:': str([resultL + argL, resultK, result])
+                    }
+                    self.take_snapshot("enumerateApplication():else:for:for", 10, kwargs)
                     yield resultL + argL, resultK, result
 
     def sketchEnumeration(self,context,environment,request,sk,upperBound,
