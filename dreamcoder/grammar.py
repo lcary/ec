@@ -627,15 +627,29 @@ class Grammar(object):
                                                           lowerBound=0.,
                                                           maximumDepth=maximumDepth):
                 if violatesSymmetry(originalFunction, arg, argumentIndex):
+                    kwargs = {
+                        'context': str(context), 'environment': str(environment),
+                        'argumentRequests': str(argumentRequests),
+                        'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth, "arg": str(arg),
+                        'note': "Violates Symmetry"
+                    }
+                    new_stack = self.take_snapshot("enumerateApplication():else:for", 8.5, kwargs, last_stack)
                     continue
 
                 kwargs = {
                     'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
-                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
+                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth, "arg": str(arg)
                 }
                 new_stack = self.take_snapshot("enumerateApplication():else:for", 9, kwargs, last_stack)
 
                 newFunction = Application(function, arg)
+
+                kwargs = {
+                    'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth, "newFunction": str(newFunction)
+                }
+                new_stack = self.take_snapshot("enumerateApplication():else:for", 9.5, kwargs, last_stack)
+
                 for resultL, resultK, result, last_stack in self.enumerateApplication(newContext, environment, newFunction,
                                                                           laterRequests,
                                                                           upperBound=upperBound + argL, stack=new_stack,
