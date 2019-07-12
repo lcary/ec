@@ -457,7 +457,8 @@ class Grammar(object):
         # allow_captures = [0.5, 3, 3.5, 4, 5, 7.5]
         # if cap_pt not in allow_captures:
         #     return stack
-        with open('state_%s.json' % str(os.getpid())) as f:
+        statefile = os.path.join('messages', 'state_%s.json' % str(os.getpid()))
+        with open(statefile, 'r') as f:
             jdata = json.load(f)
         import time
         d = {
@@ -466,7 +467,7 @@ class Grammar(object):
         d.update(kwargs)
         jdata['intermediates'].append(d)
 
-        with open('state_%s.json' % str(os.getpid()), 'w') as f:
+        with open(statefile, 'w') as f:
             json.dump(jdata, f, indent=2)
 
         d.update({'children': []})

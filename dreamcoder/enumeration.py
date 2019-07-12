@@ -498,6 +498,7 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
 
     # DEBUGGING CODE. DO NOT MERGE.
     import time as ltime
+    os.makedirs('messages', exist_ok=True)
     def write_statefile_data(filename, jdata):
         with open(filename, 'w') as f:
             json.dump(jdata, f, indent=2)
@@ -517,8 +518,8 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
         jdata['stacks'].append(current_stack)
         write_statefile_data(filename, jdata)
 
-    statefile = 'state_%s.json' % str(os.getpid())
-    statefile_nested = 'state_%s_nested.json' % str(os.getpid())
+    statefile = os.path.join('messages', 'state_%s.json' % str(os.getpid()))
+    statefile_nested = os.path.join('messages', 'state_%s_nested.json' % str(os.getpid()))
     create_statefile(statefile, {'intermediates': []})
     create_statefile(statefile_nested, {'stacks': []})
 

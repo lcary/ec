@@ -1,4 +1,4 @@
-import glob, json, pprint
+import os, glob, json, pprint
 from collections import Counter
 
 class bcolors:
@@ -12,7 +12,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-for fname in glob.glob('state_*.json'):
+for fname in glob.glob(os.path.join('messages', 'state_*.json')):
     with open(fname) as f:
         jdata = json.load(f)
     if 'intermediates' in jdata:
@@ -28,13 +28,13 @@ for fname in glob.glob('state_*.json'):
             normal = bcolors.FAIL + str(normal) + bcolors.ENDC
 
         try:
-            min_max_depth = min([d['maximumDepth'] for d in jdata['intermediates']])
+            deepest_search = 99 - min([d['maximumDepth'] for d in jdata['intermediates']])
         except ValueError:
-            min_max_depth = None
+            deepest_search = None
 
         out = {
-            'minimum max_depth': min_max_depth,
-            'num programs': len(jdata['programs']),
+            'deepest search depth': deepest_search,
+            'total programs': len(jdata['programs']),
             'normal': normal,
             'capture points': json.dumps(cap_points, indent=2, sort_keys=True)
         }
