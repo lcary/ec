@@ -500,6 +500,9 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
     with open('state_%s.json' % str(os.getpid()), 'w') as fp:
         json.dump({'request': str(request), 'programs': [], 'intermediates': [], 'start': ltime.time()}, fp, indent=2)
 
+    with open('state_nested_%s.json' % str(os.getpid()), 'w') as fp:
+        json.dump({'request': str(request), 'programs': [], 'stacks': [], 'start': ltime.time()}, fp, indent=2)
+
     starting = time()
     previousBudget = lowerBound
     budget = lowerBound + budgetIncrement
@@ -510,14 +513,21 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
                 budget <= upperBound:
             numberOfPrograms = 0
 
+            current_stack = {'name': 'top', 'children': [], 'ts': ltime.time()}
             for prior, _, p in g.enumeration(Context.EMPTY, [], request,
-                                             maximumDepth=3,
-                                             upperBound=budget,
+                                             maximumDepth=99,
+                                             upperBound=budget, stack=current_stack['children'],
                                              lowerBound=previousBudget):
                 with open('state_%s.json' % str(os.getpid())) as f:
                     jdata = json.load(f)
                 jdata['programs'].append({'prior': str(prior), 'context': str(_), 'program': str(p)})
                 with open('state_%s.json' % str(os.getpid()), 'w') as f:
+                    json.dump(jdata, f, indent=2)
+
+                with open('state_nested_%s.json' % str(os.getpid())) as f:
+                    jdata = json.load(f)
+                jdata['programs'].append({'prior': str(prior), 'context': str(_), 'program': str(p)})
+                with open('state_nested_%s.json' % str(os.getpid()), 'w') as f:
                     json.dump(jdata, f, indent=2)
 
                 descriptionLength = -prior
@@ -550,13 +560,26 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
                         hits[n].popMaximum()
 
                 if timeout is not None and time() - starting > timeout:
+                    with open('state_nested_%s.json' % str(os.getpid())) as f:
+                        jdata = json.load(f)
+                    jdata['stacks'].append(current_stack)
+                    with open('state_nested_%s.json' % str(os.getpid()), 'w') as f:
+                        json.dump(jdata, f, indent=2)
                     raise EnumerationTimeout
+
+            with open('state_nested_%s.json' % str(os.getpid())) as f:
+                jdata = json.load(f)
+            jdata['stacks'].append(current_stack)
+            with open('state_nested_%s.json' % str(os.getpid()), 'w') as f:
+                json.dump(jdata, f, indent=2)
 
             previousBudget = budget
             budget += budgetIncrement
 
             if budget > upperBound:
+                print('budget exceeded')
                 break
+
     except EnumerationTimeout:
         pass
     frontiers = {tasks[n]: Frontier([e for _, e in hits[n]],

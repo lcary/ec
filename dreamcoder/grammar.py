@@ -452,12 +452,16 @@ class Grammar(object):
         return max( e.logLikelihood + self.logLikelihood(frontier.task.request, e.program)
                     for e in frontier )                
 
-    def take_snapshot(self, method_, cappt, kwargs):
+    def take_snapshot(self, meth, cap_pt, kwargs, stack):
+        # allow_captures = [i for i in range(0, 11)]
+        # allow_captures = [0.5, 3, 3.5, 4, 5, 7.5]
+        # if cap_pt not in allow_captures:
+        #     return stack
         with open('state_%s.json' % str(os.getpid())) as f:
             jdata = json.load(f)
         import time
         d = {
-            'method': method_, 'capture_point': cappt,
+            'method': meth, 'capture_point': cap_pt,
             'ts': time.time()}
         d.update(kwargs)
         jdata['intermediates'].append(d)
@@ -465,24 +469,34 @@ class Grammar(object):
         with open('state_%s.json' % str(os.getpid()), 'w') as f:
             json.dump(jdata, f, indent=2)
 
-    def enumeration(self,context,environment,request,upperBound,
+        d.update({'children': []})
+        stack.append(d)
+        return stack[-1]['children']
+
+    def enumeration(self,context,environment,request,upperBound,stack,
                     maximumDepth=20,
                     lowerBound=0.):
         '''Enumerates all programs whose MDL satisfies: lowerBound <= MDL < upperBound'''
         if upperBound < 0 or maximumDepth == 1:
+            kwargs = {
+                'context': str(context), 'environment': str(environment), 'request': str(request),
+                'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                'note': 'RETURN!'
+            }
+            new_stack = self.take_snapshot("enumeration()", 0.5, kwargs, stack)
             return
 
         kwargs = {
             'context': str(context), 'environment': str(environment), 'request': str(request),
             'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
         }
-        self.take_snapshot("enumeration()", 1, kwargs)
+        new_stack = self.take_snapshot("enumeration()", 1, kwargs, stack)
 
         if request.isArrow():
             v = request.arguments[0]
             for l, newContext, b in self.enumeration(context, [v] + environment,
                                                      request.arguments[1],
-                                                     upperBound=upperBound,
+                                                     upperBound=upperBound, stack=new_stack,
                                                      lowerBound=lowerBound,
                                                      maximumDepth=maximumDepth):
                 kwargs = {
@@ -490,7 +504,7 @@ class Grammar(object):
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                     'yields:': str([l, newContext, Abstraction(b)])
                 }
-                self.take_snapshot("enumeration():request.isArrow()", 2, kwargs)
+                new_stack = self.take_snapshot("enumeration():request.isArrow()", 2, kwargs, stack)
                 yield l, newContext, Abstraction(b)
 
         else:
@@ -500,9 +514,22 @@ class Grammar(object):
             kwargs = {
                 'context': str(context), 'environment': str(environment), 'request': str(request),
                 'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
-                'candidates': str([c for c in candidates])
+                'candidates': [str(c) for c in candidates]
             }
-            self.take_snapshot("enumeration():else", 3, kwargs)
+            new_stack = self.take_snapshot("enumeration():else", 3, kwargs, stack)
+
+            all_return = True
+            for l, t, p, newContext in candidates:
+                mdl = -l
+                if (mdl < upperBound):
+                    all_return = False
+            if all_return:
+                kwargs = {
+                    'context': str(context), 'environment': str(environment), 'argumentRequests': str(request),
+                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                    'note': 'ALL_RETURN!!!'
+                }
+                new_stack = self.take_snapshot("enumeration()", 3.5, kwargs, stack)
 
             for l, t, p, newContext in candidates:
                 mdl = -l
@@ -512,14 +539,16 @@ class Grammar(object):
                 kwargs = {
                     'context': str(context), 'environment': str(environment), 'request': str(request),
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
-                    'candidate': str([l, t, p, newContext])
+                    'candidate': {
+                        "log_probability": str(l), "type": str(t), "program": str(p), "newContext": str(newContext)
+                    }
                 }
-                self.take_snapshot("enumeration():else", 4, kwargs)
+                new_stack = self.take_snapshot("enumeration():else", 4, kwargs, stack)
 
                 xs = t.functionArguments()
                 for aL, aK, application in\
                     self.enumerateApplication(newContext, environment, p, xs,
-                                              upperBound=upperBound + l,
+                                              upperBound=upperBound + l, stack=new_stack,
                                               lowerBound=lowerBound + l,
                                               maximumDepth=maximumDepth - 1):
                     kwargs = {
@@ -527,8 +556,14 @@ class Grammar(object):
                         'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                         'yields:': str([aL + l, aK, application])
                     }
-                    self.take_snapshot("enumeration():else:for", 5, kwargs)
+                    new_stack = self.take_snapshot("enumeration():else:for", 5, kwargs, stack)
                     yield aL + l, aK, application
+        kwargs = {
+            'context': str(context), 'environment': str(environment), 'request': str(request),
+            'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+            'note': 'RETURN!'
+        }
+        self.take_snapshot("enumeration()", 5.25, kwargs, stack)
 
     def enumerateApplication(self, context, environment,
                              function, argumentRequests,
@@ -537,11 +572,18 @@ class Grammar(object):
                              upperBound,
                              # Lower bound on the description length of all of
                              # the arguments
+                             stack,
                              lowerBound=0.,
                              maximumDepth=20,
                              originalFunction=None,
                              argumentIndex=0):
         if upperBound < 0. or maximumDepth == 1:
+            kwargs = {
+                'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+                'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                'note': 'RETURN!'
+            }
+            new_stack = self.take_snapshot("enumerateApplication():upperBound < 0. or maximumDepth == 1", 5.5, kwargs, stack)
             return
         if originalFunction is None:
             originalFunction = function
@@ -550,7 +592,7 @@ class Grammar(object):
             'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
             'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
         }
-        self.take_snapshot("enumerateApplication()", 6, kwargs)
+        new_stack = self.take_snapshot("enumerateApplication()", 6, kwargs, stack)
 
         if argumentRequests == []:
             if lowerBound <= 0. and 0. < upperBound:
@@ -559,22 +601,28 @@ class Grammar(object):
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                     'yields:': str([0., context, function])
                 }
-                self.take_snapshot("enumerateApplication()", 7, kwargs)
+                new_stack = self.take_snapshot("enumerateApplication()", 7, kwargs, stack)
 
                 yield 0., context, function
             else:
+                kwargs = {
+                    'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+                    'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+                    'note': 'RETURN!'
+                }
+                new_stack = self.take_snapshot("enumerateApplication():argumentRequests == []", 7.5, kwargs, stack)
                 return
         else:
             kwargs = {
                 'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
                 'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
             }
-            self.take_snapshot("enumerateApplication():else", 8, kwargs)
+            new_stack = self.take_snapshot("enumerateApplication():else", 8, kwargs, stack)
 
             argRequest = argumentRequests[0].apply(context)
             laterRequests = argumentRequests[1:]
             for argL, newContext, arg in self.enumeration(context, environment, argRequest,
-                                                          upperBound=upperBound,
+                                                          upperBound=upperBound, stack=new_stack,
                                                           lowerBound=0.,
                                                           maximumDepth=maximumDepth):
                 if violatesSymmetry(originalFunction, arg, argumentIndex):
@@ -584,12 +632,12 @@ class Grammar(object):
                     'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
                 }
-                self.take_snapshot("enumerateApplication():else:for", 9, kwargs)
+                new_stack = self.take_snapshot("enumerateApplication():else:for", 9, kwargs, stack)
 
                 newFunction = Application(function, arg)
                 for resultL, resultK, result in self.enumerateApplication(newContext, environment, newFunction,
                                                                           laterRequests,
-                                                                          upperBound=upperBound + argL,
+                                                                          upperBound=upperBound + argL, stack=new_stack,
                                                                           lowerBound=lowerBound + argL,
                                                                           maximumDepth=maximumDepth,
                                                                           originalFunction=originalFunction,
@@ -599,8 +647,15 @@ class Grammar(object):
                         'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                         'yields:': str([resultL + argL, resultK, result])
                     }
-                    self.take_snapshot("enumerateApplication():else:for:for", 10, kwargs)
+                    new_stack = self.take_snapshot("enumerateApplication():else:for:for", 10, kwargs, stack)
                     yield resultL + argL, resultK, result
+
+        kwargs = {
+            'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
+            'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
+            'note': 'RETURN!'
+        }
+        self.take_snapshot("enumerateApplication()", 10.25, kwargs, stack)
 
     def sketchEnumeration(self,context,environment,request,sk,upperBound,
                            maximumDepth=20,
