@@ -496,12 +496,31 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
     # we will never maintain maximumFrontier best solutions
     hits = [PQ() for _ in tasks]
 
+    # DEBUGGING CODE. DO NOT MERGE.
     import time as ltime
-    with open('state_%s.json' % str(os.getpid()), 'w') as fp:
-        json.dump({'request': str(request), 'programs': [], 'intermediates': [], 'start': ltime.time()}, fp, indent=2)
+    def write_statefile_data(filename, jdata):
+        with open(filename, 'w') as f:
+            json.dump(jdata, f, indent=2)
+    def read_statefile_data(filename):
+        with open(filename) as f:
+            return json.load(f)
+    def create_statefile(filename, extra):
+        jdata = {'request': str(request), 'programs': [], 'start': ltime.time()}
+        jdata.update(extra)
+        write_statefile_data(filename, jdata)
+    def update_statefile_programs(filename, pdata):
+        jdata = read_statefile_data(filename)
+        jdata['programs'].append(pdata)
+        write_statefile_data(filename, jdata)
+    def update_statefile_stacks(filename, sdata):
+        jdata = read_statefile_data(filename)
+        jdata['stacks'].append(current_stack)
+        write_statefile_data(filename, jdata)
 
-    with open('state_nested_%s.json' % str(os.getpid()), 'w') as fp:
-        json.dump({'request': str(request), 'programs': [], 'stacks': [], 'start': ltime.time()}, fp, indent=2)
+    statefile = 'state_%s.json' % str(os.getpid())
+    statefile_nested = 'state_%s_nested.json' % str(os.getpid())
+    create_statefile(statefile, {'intermediates': []})
+    create_statefile(statefile_nested, {'stacks': []})
 
     starting = time()
     previousBudget = lowerBound
@@ -518,17 +537,9 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
                                              maximumDepth=99,
                                              upperBound=budget, stack=current_stack['children'],
                                              lowerBound=previousBudget):
-                with open('state_%s.json' % str(os.getpid())) as f:
-                    jdata = json.load(f)
-                jdata['programs'].append({'prior': str(prior), 'context': str(_), 'program': str(p)})
-                with open('state_%s.json' % str(os.getpid()), 'w') as f:
-                    json.dump(jdata, f, indent=2)
-
-                with open('state_nested_%s.json' % str(os.getpid())) as f:
-                    jdata = json.load(f)
-                jdata['programs'].append({'prior': str(prior), 'context': str(_), 'program': str(p)})
-                with open('state_nested_%s.json' % str(os.getpid()), 'w') as f:
-                    json.dump(jdata, f, indent=2)
+                pdata = {'prior': str(prior), 'context': str(_), 'program': str(p)}
+                update_statefile_programs(statefile, pdata)
+                update_statefile_programs(statefile_nested, pdata)
 
                 descriptionLength = -prior
                 # Shouldn't see it on this iteration
@@ -560,18 +571,10 @@ def enumerateForTasks(g, tasks, likelihoodModel, _=None,
                         hits[n].popMaximum()
 
                 if timeout is not None and time() - starting > timeout:
-                    with open('state_nested_%s.json' % str(os.getpid())) as f:
-                        jdata = json.load(f)
-                    jdata['stacks'].append(current_stack)
-                    with open('state_nested_%s.json' % str(os.getpid()), 'w') as f:
-                        json.dump(jdata, f, indent=2)
+                    update_statefile_stacks(statefile_nested, current_stack)
                     raise EnumerationTimeout
 
-            with open('state_nested_%s.json' % str(os.getpid())) as f:
-                jdata = json.load(f)
-            jdata['stacks'].append(current_stack)
-            with open('state_nested_%s.json' % str(os.getpid()), 'w') as f:
-                json.dump(jdata, f, indent=2)
+            update_statefile_stacks(statefile_nested, current_stack)
 
             previousBudget = budget
             budget += budgetIncrement
