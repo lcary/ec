@@ -517,7 +517,7 @@ class Grammar(object):
                 'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                 'candidates': [str(c) for c in candidates]
             }
-            new_stack = self.take_snapshot("enumeration():else", 3, kwargs, stack)
+            new_stack = self.take_snapshot("enumeration():else", 3, kwargs, new_stack)
 
             all_return = True
             for l, t, p, newContext in candidates:
@@ -530,7 +530,7 @@ class Grammar(object):
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                     'note': 'ALL_RETURN!!!'
                 }
-                new_stack = self.take_snapshot("enumeration()", 3.5, kwargs, stack)
+                new_stack = self.take_snapshot("enumeration()", 3.5, kwargs, new_stack)
 
             for l, t, p, newContext in candidates:
                 mdl = -l
@@ -544,7 +544,7 @@ class Grammar(object):
                         "log_probability": str(l), "type": str(t), "program": str(p), "newContext": str(newContext)
                     }
                 }
-                new_stack = self.take_snapshot("enumeration():else", 4, kwargs, stack)
+                new_stack = self.take_snapshot("enumeration():else", 4, kwargs, new_stack)
 
                 xs = t.functionArguments()
                 for aL, aK, application, last_stack in\
@@ -564,7 +564,7 @@ class Grammar(object):
             'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
             'note': 'RETURN!'
         }
-        self.take_snapshot("enumeration()", 5.25, kwargs, stack)
+        self.take_snapshot("enumeration()", 5.25, kwargs, new_stack)
 
     def enumerateApplication(self, context, environment,
                              function, argumentRequests,
@@ -602,7 +602,7 @@ class Grammar(object):
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                     'yields:': str([0., context, function])
                 }
-                new_stack = self.take_snapshot("enumerateApplication()", 7, kwargs, stack)
+                new_stack = self.take_snapshot("enumerateApplication()", 7, kwargs, new_stack)
 
                 yield 0., context, function, new_stack
             else:
@@ -611,14 +611,14 @@ class Grammar(object):
                     'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
                     'note': 'RETURN!'
                 }
-                new_stack = self.take_snapshot("enumerateApplication():argumentRequests == []", 7.5, kwargs, stack)
+                new_stack = self.take_snapshot("enumerateApplication():argumentRequests == []", 7.5, kwargs, new_stack)
                 return
         else:
             kwargs = {
                 'context': str(context), 'environment': str(environment), 'argumentRequests': str(argumentRequests),
                 'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth
             }
-            new_stack = self.take_snapshot("enumerateApplication():else", 8, kwargs, stack)
+            new_stack = self.take_snapshot("enumerateApplication():else", 8, kwargs, new_stack)
 
             argRequest = argumentRequests[0].apply(context)
             laterRequests = argumentRequests[1:]
@@ -670,7 +670,7 @@ class Grammar(object):
             'upperBound': upperBound, 'lowerBound': lowerBound, 'maximumDepth': maximumDepth,
             'note': 'RETURN!'
         }
-        self.take_snapshot("enumerateApplication()", 10.25, kwargs, stack)
+        self.take_snapshot("enumerateApplication()", 10.25, kwargs, new_stack)
 
     def sketchEnumeration(self,context,environment,request,sk,upperBound,
                            maximumDepth=20,
