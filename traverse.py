@@ -85,7 +85,7 @@ def filter_explore_children(n, path, log, filter_list):
         log = log + [{i:n[i] for i in n if i!='children'}]
 
         if not children:
-            if n.get("capture_point") in filter_list:
+            if filter_list == 'any' or n.get("capture_point") in filter_list:
                 fname = 'filter_explore_children_{}'.format(time.time())
                 fname = os.path.join('messages', 'traverse', fname)
                 with open(fname, 'w') as f:
@@ -98,7 +98,15 @@ def filter_explore_children(n, path, log, filter_list):
 
 
 if filter_mode:
-    filter_list = list(map(int, filter_mode.split(',')))
+    try:
+        filter_list = list(map(int, filter_mode.split(',')))
+    except Exception as e1:
+        try:
+            assert filter_mode.strip().lower() == 'any'
+        except AssertionError:
+            raise e1
+        else:
+            filter_list = 'any'
     path = []
     log = []
     filter_explore_children(d["stacks"], path, log, filter_list)
