@@ -14,7 +14,11 @@ class bcolors:
 
 for fname in glob.glob(os.path.join('messages', 'state_*.json')):
     with open(fname) as f:
-        jdata = json.load(f)
+        try:
+            jdata = json.load(f)
+        except Exception as e:
+            print("ERROR: cannot open file ", fname)
+            raise e
     if 'intermediates' in jdata:
         print('\nfile:', fname)
         print('-'*(5 + len(fname)))
