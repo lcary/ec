@@ -430,9 +430,6 @@ def solveForTask_julia(
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE)
         response, error = process.communicate()
-        response_file = response.strip()
-        with open(response_file, 'r') as fp:
-            response_data = json.load(fp)
     except OSError as exc:
         raise exc
     except:
@@ -441,10 +438,17 @@ def solveForTask_julia(
         print("message,", message)
         assert False, "MAX RAISE"
 
+    response_file = response.strip()
+    print('response file: ', str(response_file))
+    with open(response_file, 'r') as fp:
+        response_data = json.load(fp)
+
     frontiers = {}
     searchTimes = {}
     for t in tasks:
         solutions = response_data[t.name]
+        if len(solutions) > 0:
+            print("solutions to {}: ".format(t.name), len(solutions))
         frontier = Frontier([FrontierEntry(program=p,
                                            logLikelihood=e["logLikelihood"],
                                            logPrior=g.logLikelihood(t.request, p))
