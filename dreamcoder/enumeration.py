@@ -1,3 +1,5 @@
+import datetime
+
 from dreamcoder.likelihoodModel import AllOrNothingLikelihoodModel
 from dreamcoder.grammar import *
 from dreamcoder.utilities import get_root_dir
@@ -27,9 +29,12 @@ def multicoreEnumeration(g, tasks, _=None,
      # everything that gets sent between processes will be dilled
     import dill
 
-    solvers = {"ocaml": solveForTask_ocaml,   
-               "pypy": solveForTask_pypy,   
-               "python": solveForTask_python}   
+    solvers = {
+        "ocaml": solveForTask_ocaml,
+        "pypy": solveForTask_pypy,
+        "python": solveForTask_python,
+        "julia": solveForTask_julia
+    }
     assert solver in solvers, "You must specify a valid solver. options are ocaml, pypy, or python." 
 
     likelihoodModel = None
@@ -364,6 +369,107 @@ def solveForTask_python(_=None,
                              maximumFrontiers=maximumFrontiers,
                              budgetIncrement=budgetIncrement,
                              lowerBound=lowerBound, upperBound=upperBound)
+
+
+def solveForTask_julia(
+        _=None,
+        elapsedTime=0.,
+        CPUs=1,
+        g=None, tasks=None,
+        lowerBound=None, upperBound=None, budgetIncrement=None,
+        timeout=None,
+        testing=None,  # FIXME: unused
+        likelihoodModel=None,
+        evaluationTimeout=None, maximumFrontiers=None):
+    import json
+
+    def taskMessage(t):
+        m = {
+            "examples": [{"inputs": list(xs), "output": y} for xs, y in t.examples],
+            "name": t.name,
+            "request": t.request.json(),
+            "maximumFrontier": maximumFrontiers[t]}
+        if hasattr(t, "specialTask"):
+            special, extra = t.specialTask
+            m["specialTask"] = special
+            m["extras"] = extra
+        return m
+
+    message = {
+        "DSL": g.json(),
+        "tasks": [taskMessage(t) for t in tasks],
+        "programTimeout": evaluationTimeout,
+        "nc": CPUs,
+        "timeout": timeout,
+        "lowerBound": lowerBound,
+        "upperBound": upperBound,
+        "budgetIncrement": budgetIncrement,
+        "verbose": False,
+        "shatter": 5 if len(tasks) == 1 and "turtle" in str(tasks[0].request) else 10}
+
+    if hasattr(tasks[0], 'maxParameters') and tasks[0].maxParameters is not None:
+        message["maxParameters"] = tasks[0].maxParameters
+
+    message = json.dumps(message)
+    message_dir = os.path.join(get_root_dir(), 'messages')
+    os.makedirs(message_dir, exist_ok=True)
+    pid = os.getpid()
+    ts = datetime.datetime.now().strftime('%Y%m%d_T%H%M%S')
+    message_name = 'request_enumeration_PID{}_{}.json'.format(pid, ts)
+    message_file = os.path.join(message_dir, message_name)
+    with open(message_file, "w") as f:
+        f.write(message)
+
+    project_dir = os.path.join(get_root_dir(), os.pardir, 'DreamCore.jl')
+    main_script = os.path.join(project_dir, 'bin', 'main.jl')
+    cmd = ['julia', '--project={}'.format(project_dir), main_script, 'enumerate', message_file]
+    print(cmd)
+
+    try:
+        process = subprocess.Popen(cmd,
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE)
+        response, error = process.communicate()
+    except OSError as exc:
+        raise exc
+    except:
+        print("response:", response)
+        print("error:", error)
+        print("message,", message)
+        assert False, "MAX RAISE"
+
+    response_file = response.strip()
+    print('response file: ', str(response_file))
+    with open(response_file, 'r') as fp:
+        response_data = json.load(fp)
+
+    frontiers = {}
+    searchTimes = {}
+    for t in tasks:
+        solutions = response_data[t.name]
+        if len(solutions) > 0:
+            print("solutions to {}: ".format(t.name), len(solutions))
+        frontier = Frontier([FrontierEntry(program=p,
+                                           logLikelihood=e["logLikelihood"],
+                                           logPrior=g.logLikelihood(t.request, p))
+                             for e in solutions
+                             for p in [Program.parse(e["program"])]],
+                            task=t)
+        frontiers[t] = frontier
+        if frontier.empty:
+            searchTimes[t] = None
+        # This is subtle:
+        # The search time we report is actually not be minimum time to find any solution
+        # Rather it is the time to find the MAP solution
+        # This is important for regression problems,
+        # where we might find something with a good prior but bad likelihood early on,
+        # and only later discovered the good high likelihood program
+        else:
+            searchTimes[t] = min(
+                (e["logLikelihood"] + e["logPrior"],
+                 e["time"]) for e in solutions)[1] + elapsedTime
+
+    return frontiers, searchTimes
 
 
 class EnumerationTimeout(Exception):

@@ -846,7 +846,9 @@ def commandlineArguments(_=None,
         choices=[
             "ocaml",
             "pypy",
-            "python"],
+            "python",
+            "julia"
+        ],
         default=solver,
         help="""Solver for enumeration.
                         Default: %s""" %
