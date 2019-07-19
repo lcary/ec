@@ -29,3 +29,5 @@ venv/
 tests/out/
 .DS_Store
 messages/
+*.png
+puddle-world/
