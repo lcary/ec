@@ -713,7 +713,7 @@ def create_more_list_tasks():
 
 
 def create_less_list_tasks():
-    tasks = get_more_list_tasks()
+    tasks = get_less_list_tasks()
     create_list_tasks(tasks, LESS_LIST_FILE)
 
 
