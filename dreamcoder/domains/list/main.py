@@ -244,6 +244,7 @@ def list_options(parser):
             "Lucas-depth2",
             "Lucas-depth3",
             "more-list-tasks",
+            "less-list-tasks"
         ])
     parser.add_argument("--maxTasks", type=int,
                         default=None,

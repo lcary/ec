@@ -286,12 +286,17 @@ def solveForTask_ocaml(_=None,
     if hasattr(tasks[0], 'maxParameters') and tasks[0].maxParameters is not None:
         message["maxParameters"] = tasks[0].maxParameters
 
-    print('request:')
-    print(request)
-
     message = json.dumps(message)
-    # uncomment this if you want to save the messages being sent to the solver
-    
+
+    message_dir = os.path.join(get_root_dir(), 'messages')
+    os.makedirs(message_dir, exist_ok=True)
+    pid = os.getpid()
+    ts = datetime.datetime.now().strftime('%Y%m%d_T%H%M%S')
+    message_name = 'ocaml_request_enumeration_PID{}_{}.json'.format(pid, ts)
+    message_file = os.path.join(message_dir, message_name)
+    with open(message_file, "w") as f:
+        f.write(message)
+    print('request file: ', message_file)
 
     try:
         solver_file = os.path.join(get_root_dir(), 'solver')
@@ -420,13 +425,13 @@ def solveForTask_julia(
     os.makedirs(message_dir, exist_ok=True)
     pid = os.getpid()
     ts = datetime.datetime.now().strftime('%Y%m%d_T%H%M%S')
-    message_name = 'request_enumeration_PID{}_{}.json'.format(pid, ts)
+    message_name = 'julia_request_enumeration_PID{}_{}.json'.format(pid, ts)
     message_file = os.path.join(message_dir, message_name)
     with open(message_file, "w") as f:
         f.write(message)
 
-    print('request data:')
-    print(message)
+    # print('request data:')
+    # print(message)
 
     project_dir = os.path.join(get_root_dir(), os.pardir, 'DreamCore.jl')
     main_script = os.path.join(project_dir, 'bin', 'main.jl')
