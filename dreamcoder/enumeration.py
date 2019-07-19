@@ -286,6 +286,9 @@ def solveForTask_ocaml(_=None,
     if hasattr(tasks[0], 'maxParameters') and tasks[0].maxParameters is not None:
         message["maxParameters"] = tasks[0].maxParameters
 
+    print('request:')
+    print(request)
+
     message = json.dumps(message)
     # uncomment this if you want to save the messages being sent to the solver
     
@@ -308,6 +311,8 @@ def solveForTask_ocaml(_=None,
         print("message,", message)
         assert False, "MAX RAISE"
 
+    print('response:')
+    print(response)
 
     pc = 0  # TODO
     frontiers = {}
@@ -420,6 +425,9 @@ def solveForTask_julia(
     with open(message_file, "w") as f:
         f.write(message)
 
+    print('request data:')
+    print(message)
+
     project_dir = os.path.join(get_root_dir(), os.pardir, 'DreamCore.jl')
     main_script = os.path.join(project_dir, 'bin', 'main.jl')
     cmd = ['julia', '--project={}'.format(project_dir), main_script, 'enumerate', message_file]
@@ -442,6 +450,9 @@ def solveForTask_julia(
     print('response file: ', str(response_file))
     with open(response_file, 'r') as fp:
         response_data = json.load(fp)
+
+    print('response data:')
+    print(response_data)
 
     frontiers = {}
     searchTimes = {}

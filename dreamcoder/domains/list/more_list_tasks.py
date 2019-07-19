@@ -10,7 +10,8 @@ from collections import Counter, OrderedDict
 
 from dreamcoder.utilities import get_data_dir
 
-JSON_FILE = os.path.join(get_data_dir(), "more_list_tasks.json")
+MORE_LIST_FILE = os.path.join(get_data_dir(), "more_list_tasks.json")
+LESS_LIST_FILE = os.path.join(get_data_dir(), "less_list_tasks.json")
 
 Integer = 'int'
 ListOfInts = 'list-of-int'
@@ -693,8 +694,41 @@ class Length(RandomListTask):
         return len(x)
 
 
+def create_list_tasks(tasks, filename):
+    names = []
+    data = []
+    for t in tasks:
+        assert t.name not in names, f'Multiple tasks with the same name ({t.name}) exist!'
+        names.append(t.name)
+        data.append(t.json())
+    with open(filename, 'w') as f:
+        json.dump(data, f)
+    num_tasks = len(tasks)
+    print(f'wrote {num_tasks} tasks to: {filename}')
+
+
 def create_more_list_tasks():
-    tasks = [
+    tasks = get_more_list_tasks()
+    create_list_tasks(tasks, MORE_LIST_FILE)
+
+
+def create_less_list_tasks():
+    tasks = get_more_list_tasks()
+    create_list_tasks(tasks, LESS_LIST_FILE)
+
+
+def get_less_list_tasks():
+    return [
+        RepeatN(),
+        LastElement(),
+        HeadthElement(),
+        Reverse(),
+        Length(),
+    ]
+
+
+def get_more_list_tasks():
+    return [
         RepeatN(),
         CountDown(),
         LastElement(),
@@ -720,18 +754,6 @@ def create_more_list_tasks():
         SortAndDedupe(),
         Length(),
     ]
-    names = []
-    data = []
-    for t in tasks:
-        assert t.name not in names, f'Multiple tasks with the same name ({t.name}) exist!'
-        names.append(t.name)
-        data.append(t.json())
-
-    with open(JSON_FILE, 'w') as f:
-        json.dump(data, f)
-
-    num_tasks = len(tasks)
-    print(f'wrote {num_tasks} tasks to: {JSON_FILE}')
 
 
 if __name__ == '__main__':

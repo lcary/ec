@@ -5,7 +5,8 @@ import math
 import os
 import datetime
 
-from dreamcoder.domains.list.more_list_tasks import JSON_FILE, create_more_list_tasks
+from dreamcoder.domains.list.more_list_tasks import MORE_LIST_FILE, create_more_list_tasks, create_less_list_tasks, \
+    LESS_LIST_FILE
 from dreamcoder.ec import explorationCompression
 from dreamcoder.utilities import eprint, flatten, testTrainSplit
 from dreamcoder.grammar import Grammar
@@ -272,8 +273,11 @@ def main(args):
 
     dataset = args.pop("dataset")
     more_list_tasks = "more-list-tasks"
-    if dataset == more_list_tasks and not os.path.exists(JSON_FILE):
+    less_list_tasks = "less-list-tasks"
+    if dataset == more_list_tasks:
         create_more_list_tasks()
+    elif dataset == less_list_tasks:
+        create_less_list_tasks()
     tasks = {
         "Lucas-old": lambda: retrieveJSONTasks("data/list_tasks.json") + sortBootstrap(),
         "bootstrap": make_list_bootstrap_tasks,
@@ -281,7 +285,8 @@ def main(args):
         "Lucas-depth1": lambda: retrieveJSONTasks("data/list_tasks2.json")[:105],
         "Lucas-depth2": lambda: retrieveJSONTasks("data/list_tasks2.json")[:4928],
         "Lucas-depth3": lambda: retrieveJSONTasks("data/list_tasks2.json"),
-        more_list_tasks: lambda: retrieveJSONTasks(JSON_FILE),
+        more_list_tasks: lambda: retrieveJSONTasks(MORE_LIST_FILE),
+        less_list_tasks: lambda: retrieveJSONTasks(LESS_LIST_FILE),
     }[dataset]()
 
     maxTasks = args.pop("maxTasks")
