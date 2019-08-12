@@ -66,7 +66,7 @@ class TaskGenerator(ABC):
         assert self.input_type is not None
         assert self.output_type is not None
         self.examples = self.make_examples()
-        self.verify()
+        self.run_unit_tests()
 
     @abstractmethod
     def func(self, inputs):
@@ -103,9 +103,9 @@ class TaskGenerator(ABC):
         """
         return []
 
-    def verify(self):
+    def run_unit_tests(self):
         """
-        Verify that the function works properly on sample input-output pairs.
+        Verify that the function works properly on some sample input-output pairs.
         """
         for i, o in self.unit_tests:
             try:
@@ -115,6 +115,13 @@ class TaskGenerator(ABC):
                     'ERROR: Unable to verify that sample inputs ({}) '
                     'evaluate to outputs ({}) for task ({})')
                 print(msg.format(i, o, self.name))
+                print('DEBUG: actual outputs: {}'.format(self.func(i)))
+                raise e
+            except Exception as e:
+                msg = (
+                    'ERROR: Unable to run task ({}) function for sample inputs ({}) '
+                    'evaluate to outputs ({})')
+                print(msg.format(self.name, i, o))
                 raise e
 
 
@@ -165,8 +172,6 @@ class RandomListTask(TaskGenerator, ABC):
 
 class RepeatN(ShuffledRangeTask):
     """
-    Routine #1 from master list.
-
     Examples:
 
         (2) - (2 2)
@@ -190,8 +195,6 @@ class RepeatN(ShuffledRangeTask):
 
 class CountDown(ShuffledRangeTask):
     """
-    Routine #2 from master list.
-
     Examples:
 
         (2) - (2 1)
@@ -205,11 +208,16 @@ class CountDown(ShuffledRangeTask):
     def func(self, x):
         return list(reversed([n for n in range(1, x[0] + 1)]))
 
+    @property
+    def unit_tests(self):
+        return [
+            ([2], [2, 1]),
+            ([5], [5, 4, 3, 2, 1]),
+        ]
+
 
 class LastElement(RandomListTask):
     """
-    Routine #3 from master list.
-
     Examples:
 
         (6 4 9 1 4) - 4
@@ -224,11 +232,16 @@ class LastElement(RandomListTask):
     def func(self, x):
         return x[-1]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 4, 9, 1, 4], 4),
+            ([7, 3, 3, 2], 2),
+            ([8, 1], 1),
+        ]
 
 class HeadthElement(RandomListTask):
     """
-    Routine #4 from master list.
-
     Examples:
 
         (3 9 2 1 8 8) - 1
@@ -252,11 +265,18 @@ class HeadthElement(RandomListTask):
         except IndexError:
             raise SkipExample
 
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 2, 1, 8, 8], 1),
+            ([2, 7, 9, 1], 9),
+            ([6, 3, 1, 8, 6, 9, 2, 7], 2),
+            ([4, 9, 5, 2, 2, 3, 9], 2),
+        ]
+
 
 class CountHead(RandomListTask):
     """
-    Routine #5 from master list.
-
     Examples:
 
         (9 2 6 4 9 1 9 9 3) - 3
@@ -274,12 +294,17 @@ class CountHead(RandomListTask):
         tail = x[1:]
         return sum(1 for n in tail if n == head)
 
+    @property
+    def unit_tests(self):
+        return [
+            ([9, 2, 6, 4, 9, 1, 9, 9, 3], 3),
+            ([3, 1, 7, 3, 9, 1, 3], 2),
+            ([6, 7, 1, 2, 9, 1], 0),
+        ]
 
 # TODO: what about zeroes?
 class FlattenMapRange(RandomListTask):
     """
-    Routine #6 from master list.
-
     Examples:
 
         (2 5 4) - (1 2 1 2 3 4 5 1 2 3 4)
@@ -294,11 +319,16 @@ class FlattenMapRange(RandomListTask):
     def func(self, x):
         return [i for j in list(map(lambda n: range(1, n + 1), x)) for i in j]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 5, 4], [1, 2, 1, 2, 3, 4, 5, 1, 2, 3, 4]),
+            ([3, 2], [1, 2, 3, 1, 2]),
+        ]
+
 
 class FlattenMapRangeReversed(RandomListTask):
     """
-    Routine #6a from master list.
-
     Examples:
 
         (2 5 4) - (2 1 5 4 3 2 1 4 3 2 1)
@@ -313,11 +343,16 @@ class FlattenMapRangeReversed(RandomListTask):
     def func(self, x):
         return [i for j in list(map(lambda n: reversed(range(1, n + 1)), x)) for i in j]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 5, 4], [2, 1, 5, 4, 3, 2, 1, 4, 3, 2, 1]),
+            ([3, 2], [3, 2, 1, 2, 1]),
+        ]
+
 
 class FlattenMapRangeSeries(RandomListTask):
     """
-    Routine #6b from master list.
-
     Examples:
 
         (4 8 1 3) - (4 5 6 7 8 7 6 5 4 3 2 1 2 3)
@@ -353,11 +388,18 @@ class FlattenMapRangeSeries(RandomListTask):
 
         return output
 
+    @property
+    def unit_tests(self):
+        return [
+            ([4, 8, 1, 3], [4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 2, 3]),
+            ([9, 7, 7, 7, 3, 4, 4, 2, 6], [9, 8, 7, 7, 7, 6, 5, 4, 3, 4, 4, 3, 2, 3, 4, 5, 6]),
+            ([3, 2, 1, 2], [3, 2, 1, 2]),
+            ([4, 1, 2, 5], [4, 3, 2, 1, 2, 3, 4, 5]),
+        ]
+
 
 class FlattenMapRangeHead(RandomListTask):
     """
-    Routine #6c from master list.
-
     Examples:
 
         (4 8 1 3) - (4 5 6 7 8 1 3)
@@ -395,11 +437,21 @@ class FlattenMapRangeHead(RandomListTask):
 
         return output
 
+    @property
+    def unit_tests(self):
+        return [
+            ([4, 8, 1, 3], [4, 5, 6, 7, 8, 1, 3]),
+            ([5, 1, 9, 7, 7, 3, 4, 4, 2, 6], [5, 1, 5, 6, 7, 8, 9, 5, 6, 7, 5, 6, 7, 3, 4, 4, 2, 5, 6]),
+            ([1, 3, 6, 2], [1, 2, 3, 1, 2, 3, 4, 5, 6, 1, 2]),
+            ([3, 1, 2, 9], [3, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+            ([4, 8, 1, 7], [4, 5, 6, 7, 8, 1, 4, 5, 6, 7]),
+            ([3, 1, 9, 7, 3, 4, 4, 2, 6], [3, 1, 3, 4, 5, 6, 7, 8, 9, 3, 4, 5, 6, 7, 3, 3, 4, 3, 4, 2, 3, 4, 5, 6]),
+            ([7, 1, 2, 9], [7, 1, 2, 7, 8, 9]),
+        ]
+
 
 class Minus2Series(RandomListTask):
     """
-    Routine #7 from master list.
-
     Examples:
 
         (6) - (6 4 2)
@@ -417,11 +469,17 @@ class Minus2Series(RandomListTask):
             return [n]
         return list(range(n, 0, -2))
 
+    @property
+    def unit_tests(self):
+        return [
+            ([6], [6, 4, 2]),
+            ([9], [9, 7, 5, 3, 1]),
+            ([18], [18, 16, 14, 12, 10, 8, 6, 4, 2]),
+        ]
+
 
 class CumulativeProduct(RandomListTask):
     """
-    Routine #8 from master list.
-
     Examples:
 
         (2 5 8 1 2) - (2 10 80 80 160)
@@ -439,11 +497,15 @@ class CumulativeProduct(RandomListTask):
             output.append(last)
         return output
 
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 5, 8, 1, 2], [2, 10, 80, 80, 160]),
+        ]
+
 
 class CumulativeSum(RandomListTask):
     """
-    Routine #9 from master list.
-
     Examples:
 
         (2 5 8 1 2) - (2 7 15 16 18)
@@ -461,11 +523,15 @@ class CumulativeSum(RandomListTask):
             output.append(last)
         return output
 
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 5, 8, 1, 2], [2, 7, 15, 16, 18]),
+        ]
+
 
 class FlattenMapRepeatN(RandomListTask):
     """
-    Routine #10 from master list.
-
     Examples:
 
         (3 1 6) - (3 3 3 1 6 6 6 6 6 6)
@@ -479,11 +545,15 @@ class FlattenMapRepeatN(RandomListTask):
     def func(self, x):
         return [i for i in x for _ in range(i)]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 1, 6], [3, 3, 3, 1, 6, 6, 6, 6, 6, 6]),
+        ]
+
 
 class Insert1s(RandomListTask):
     """
-    Routine #11 from master list.
-
     Examples:
 
         (6 2 7) - (6 1 2 1 7 1)
@@ -497,11 +567,16 @@ class Insert1s(RandomListTask):
     def func(self, x):
         return [j for i in x for j in [i, 1]]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 2, 7], [6, 1, 2, 1, 7, 1]),
+            ([8, 8, 1, 3], [8, 1, 8, 1, 1, 1, 3, 1]),
+        ]
+
 
 class InsertIndex(RandomListTask):
     """
-    Routine #12 from master list.
-
     Examples:
 
         (6 2 7) - (6 1 2 2 7 3)
@@ -515,12 +590,17 @@ class InsertIndex(RandomListTask):
     def func(self, x):
         return [j for i, n in enumerate(x, start=1) for j in [n, i]]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 2, 7], [6, 1, 2, 2, 7, 3]),
+            ([8, 8, 1, 3], [8, 1, 8, 2, 1, 3, 3, 4]),
+        ]
+
 
 class CountRunLengths(RandomListTask):
     """
     Replace each run of identical elements with the element and the length of the run.
-
-    Routine #13 from master list.
 
     Examples:
 
@@ -541,14 +621,19 @@ class CountRunLengths(RandomListTask):
             c[n] += 1
         return [i for k,v in c.items() for i in [k, v]]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([8, 8, 1, 3], [8, 2, 1, 1, 3, 1]),
+            ([9, 7, 7, 7, 3, 4, 4, 1, 1, 1, 1, 1], [9, 1, 7, 3, 3, 1, 4, 2, 1, 5]),
+        ]
+
 
 class IndexCounter(RandomListTask):
     """
     For the list xs, create a list, ys, with as many elements
     as the largest element in the list, then set ys[i] to be
     equal to the number of elements in xs equal to i.
-
-    Routine #14 from master list.
 
     Examples:
 
@@ -569,12 +654,19 @@ class IndexCounter(RandomListTask):
             output[n - 1] += 1
         return output
 
+    @property
+    def unit_tests(self):
+        return [
+            ([8, 8, 1, 3], [1, 0, 1, 0, 0, 0, 0, 2]),
+            ([9, 7, 7, 7, 3, 4, 4, 1, 1, 1, 1, 1], [5, 0, 1, 2, 0, 0, 3, 0, 1]),
+            ([3, 2, 1, 2], [1, 2, 1]),
+            ([4, 1, 2, 2, 2, 1], [2, 3, 0, 1]),
+        ]
+
 
 class AddNtoNthElement(RandomListTask):
     """
     Add n to the nth element, starting from 0.
-
-    Routine #15 from master list.
 
     Examples:
 
@@ -590,12 +682,18 @@ class AddNtoNthElement(RandomListTask):
     def func(self, x):
         return [n + index for index, n in enumerate(x)]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 2, 7], [6, 3, 9]),
+            ([8, 8, 1, 3], [8, 9, 3, 6]),
+            ([3, 9, 3, 8, 1, 7], [3, 10, 5, 11, 5, 12]),
+        ]
+
 
 class Reverse(RandomListTask):
     """
     Reverse the list.
-
-    Routine #16 from master list.
 
     Examples:
 
@@ -612,12 +710,19 @@ class Reverse(RandomListTask):
     def func(self, x):
         return list(reversed(x))
 
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 2, 1, 8, 8], [8, 8, 1, 2, 9, 3]),
+            ([2, 7, 9, 1], [1, 9, 7, 2]),
+            ([6, 3, 1, 8, 6, 9, 2, 7], [7, 2, 9, 6, 8, 1, 3, 6]),
+            ([4, 9, 5, 2, 2, 3, 9], [9, 3, 2, 2, 5, 9, 4]),
+        ]
+
 
 class ReverseAndAddNtoNthElement(RandomListTask):
     """
     Reverse the list, then add n to the nth element starting from 0.
-
-    Routine #17 from master list.
 
     Examples:
 
@@ -633,14 +738,20 @@ class ReverseAndAddNtoNthElement(RandomListTask):
     def func(self, x):
         return [n + index for index, n in enumerate(list(reversed(x)))]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 2, 7], [7, 3, 8]),
+            ([8, 8, 1, 3], [3, 2, 10, 11]),
+            ([3, 9, 3, 8, 2, 7], [7, 3, 10, 6, 13, 8]),
+        ]
+
 
 class CountNumbersAndSort(RandomListTask):
     """
     A flattened list of pairs (k n_k) specifying each distinct number k
     in the original list, followed by the number of times n_k that number k
     appears in the original list, in increasing order k.
-
-    Routine #18 from master list.
 
     Examples:
 
@@ -659,12 +770,18 @@ class CountNumbersAndSort(RandomListTask):
             c[n] += 1
         return [i for k, v in sorted(c.items()) for i in [k, v]]
 
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], [2, 1, 3, 2, 7, 1, 8, 1, 9, 1]),
+            ([8, 8, 1, 3], [1, 1, 3, 1, 8, 2]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [1, 5, 3, 1, 4, 2, 7, 3, 9, 1]),
+        ]
+
 
 class SortIncreasing(RandomListTask):
     """
     Original list sorted in increasing order, preserving repeats.
-
-    Routine #19 from master list.
 
     Examples:
 
@@ -680,12 +797,18 @@ class SortIncreasing(RandomListTask):
     def func(self, x):
         return list(sorted(x))
 
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], [2, 3, 3, 7, 8, 9]),
+            ([8, 8, 1, 3], [1, 3, 8, 8]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [1, 1, 1, 1, 1, 3, 4, 4, 7, 7, 7, 9]),
+        ]
+
 
 class SortAndDedupe(RandomListTask):
     """
     Original list sorted in increasing order, without repeats.
-
-    Routine #20 from master list.
 
     Examples:
 
@@ -702,6 +825,14 @@ class SortAndDedupe(RandomListTask):
     def func(self, x):
         return list(sorted(set(x)))
 
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], [2, 3, 7, 8, 9]),
+            ([8, 8, 1, 3], [1, 3, 8]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [1, 3, 4, 7, 9]),
+        ]
+
 
 class Length(RandomListTask):
     """
@@ -715,7 +846,6 @@ class Length(RandomListTask):
         (8 8 1 3) - 4
         (7 3 1 4 4 1 1 9 7 1 7 1) - 12
 
-
     """
     name = 'length'
     input_type = ListOfInts
@@ -723,6 +853,32 @@ class Length(RandomListTask):
 
     def func(self, x):
         return len(x)
+
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], 6),
+            ([8, 8, 1, 3], 4),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], 12),
+        ]
+
+
+def reformat_examples(example_str):
+    """
+    Use to convert examples in Josh's Google Doc to Python format for unit tests.
+    """
+    lines = example_str.split('\n')
+    lines = [l.strip() for l in lines]
+    lines = list(filter(None, lines))
+    for line in lines:
+        line = line.replace('(', '[')
+        line = line.replace(')', ']')
+        i, o = line.split('-')
+        i = i.strip()
+        i = i.replace(' ', ', ')
+        o = o.strip()
+        o = o.replace(' ', ', ')
+        print('    (' + i + ', ' + o + '),')
 
 
 def generate_multiple(task_cls, count):
