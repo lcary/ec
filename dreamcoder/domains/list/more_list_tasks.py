@@ -171,12 +171,6 @@ class RandomListTask(TaskGenerator, ABC):
 
 
 class RepeatN(ShuffledRangeTask):
-    """
-    Examples:
-
-        (2) - (2 2)
-        (5) - (5 5 5 5 5)
-    """
     name = 'repeat_n_n_times'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -194,13 +188,6 @@ class RepeatN(ShuffledRangeTask):
 
 
 class CountDown(ShuffledRangeTask):
-    """
-    Examples:
-
-        (2) - (2 1)
-        (5) - (5 4 3 2 1)
-
-    """
     name = 'count_down_from_n'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -217,14 +204,6 @@ class CountDown(ShuffledRangeTask):
 
 
 class LastElement(RandomListTask):
-    """
-    Examples:
-
-        (6 4 9 1 4) - 4
-        (7 3 3 2) - 2
-        (8 1) - 1
-
-    """
     name = 'last_element_of_list'
     input_type = ListOfInts
     output_type = Integer
@@ -240,17 +219,8 @@ class LastElement(RandomListTask):
             ([8, 1], 1),
         ]
 
+
 class HeadthElement(RandomListTask):
-    """
-    Examples:
-
-        (3 9 2 1 8 8) - 1
-        (2 7 9 1) - 9
-        (6 3 1 8 6 9 2 7) - 2
-        (4 9 5 2 2 3 9) - 2
-
-
-    """
     name = 'headth_element_of_tail'
     input_type = ListOfInts
     output_type = Integer
@@ -276,14 +246,6 @@ class HeadthElement(RandomListTask):
 
 
 class CountHead(RandomListTask):
-    """
-    Examples:
-
-        (9 2 6 4 9 1 9 9 3) - 3
-        (3 1 7 3 9 1 3) - 2
-        (6 7 1 2 9 1) - 0
-
-    """
     name = 'count_head_in_tail'
     input_type = ListOfInts
     output_type = Integer
@@ -302,15 +264,9 @@ class CountHead(RandomListTask):
             ([6, 7, 1, 2, 9, 1], 0),
         ]
 
+
 # TODO: what about zeroes?
 class FlattenMapRange(RandomListTask):
-    """
-    Examples:
-
-        (2 5 4) - (1 2 1 2 3 4 5 1 2 3 4)
-        (3 2) - (1 2 3 1 2)
-
-    """
     name = 'flatten_map_range'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -328,13 +284,6 @@ class FlattenMapRange(RandomListTask):
 
 
 class FlattenMapRangeReversed(RandomListTask):
-    """
-    Examples:
-
-        (2 5 4) - (2 1 5 4 3 2 1 4 3 2 1)
-        (3 2) - (3 2 1 2 1)
-
-    """
     name = 'flatten_map_range_reversed'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -352,15 +301,6 @@ class FlattenMapRangeReversed(RandomListTask):
 
 
 class FlattenMapRangeSeries(RandomListTask):
-    """
-    Examples:
-
-        (4 8 1 3) - (4 5 6 7 8 7 6 5 4 3 2 1 2 3)
-        (9 7 7 7 3 4 4 2 6) - (9 8 7 7 7 6 5 4 3 4 4 3 2 3 4 5 6)
-        (3 2 1 2) - (3 2 1 2)
-        (4 1 2 5) - (4 3 2 1 2 3 4 5)
-
-    """
     name = 'flatten_map_range_series'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -399,19 +339,6 @@ class FlattenMapRangeSeries(RandomListTask):
 
 
 class FlattenMapRangeHead(RandomListTask):
-    """
-    Examples:
-
-        (4 8 1 3) - (4 5 6 7 8 1 3)
-        (5 1 9 7 7 3 4 4 2 6) - (5 1 5 6 7 8 9 5 6 7 5 6 7 3 4 4 2 5 6)
-        (1 3 6 2) - (1 2 3 1 2 3 4 5 6 1 2)
-        (3 1 2 9) - (3 1 2 3 4 5 6 7 8 9)
-        (4 8 1 7) - (4 5 6 7 8 1 4 5 6 7)
-        (3 1 9 7 3 4 4 2 6) - (3 1 3 4 5 6 7 8 9 3 4 5 6 7 3 3 4 3 4 2 3 4 5 6)
-        (7 1 2 9) - (7 1 2 7 8 9)
-
-
-    """
     name = 'flatten_map_range_head'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -451,14 +378,6 @@ class FlattenMapRangeHead(RandomListTask):
 
 
 class Minus2Series(RandomListTask):
-    """
-    Examples:
-
-        (6) - (6 4 2)
-        (9) - (9 7 5 3 1)
-        (18) - (18 16 14 12 10 8 6 4 2)
-
-    """
     name = 'minus_2_series'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -479,12 +398,6 @@ class Minus2Series(RandomListTask):
 
 
 class CumulativeProduct(RandomListTask):
-    """
-    Examples:
-
-        (2 5 8 1 2) - (2 10 80 80 160)
-
-    """
     name = 'cumulative_product'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -505,12 +418,6 @@ class CumulativeProduct(RandomListTask):
 
 
 class CumulativeSum(RandomListTask):
-    """
-    Examples:
-
-        (2 5 8 1 2) - (2 7 15 16 18)
-
-    """
     name = 'cumulative_sum'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -531,12 +438,6 @@ class CumulativeSum(RandomListTask):
 
 
 class FlattenMapRepeatN(RandomListTask):
-    """
-    Examples:
-
-        (3 1 6) - (3 3 3 1 6 6 6 6 6 6)
-
-    """
     name = 'flatten_map_repeat_n_n_times'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -553,13 +454,6 @@ class FlattenMapRepeatN(RandomListTask):
 
 
 class Insert1s(RandomListTask):
-    """
-    Examples:
-
-        (6 2 7) - (6 1 2 1 7 1)
-        (8 8 1 3) - ( 8 1 8 1 1 1 3 1)
-
-    """
     name = 'insert_1_after_each_element'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -576,13 +470,6 @@ class Insert1s(RandomListTask):
 
 
 class InsertIndex(RandomListTask):
-    """
-    Examples:
-
-        (6 2 7) - (6 1 2 2 7 3)
-        (8 8 1 3) - ( 8 1 8 2 1 3 3 4)
-
-    """
     name = 'insert_index_after_each_element'
     input_type = ListOfInts
     output_type = ListOfInts
@@ -601,12 +488,6 @@ class InsertIndex(RandomListTask):
 class CountRunLengths(RandomListTask):
     """
     Replace each run of identical elements with the element and the length of the run.
-
-    Examples:
-
-        (8 8 1 3) - (8 2 1 1 3 1)
-        (9 7 7 7 3 4 4 1 1 1 1 1) - (9 1 7 3 3 1 4 2 1 5)
-
     """
     name = 'count_run_lengths'
     input_type = ListOfInts
@@ -634,14 +515,6 @@ class IndexCounter(RandomListTask):
     For the list xs, create a list, ys, with as many elements
     as the largest element in the list, then set ys[i] to be
     equal to the number of elements in xs equal to i.
-
-    Examples:
-
-        (8 8 1 3) - (1 0 1 0 0 0 0 2)
-        (9 7 7 7 3 4 4 1 1 1 1 1) - (5 0 1 2 0 0 0 3 0 1)
-        (3 2 1 2) - (1 2 1)
-        (4 1 2 2 2 1) - (2 3 0 1)
-
     """
     name = 'index_counter'
     input_type = ListOfInts
@@ -667,13 +540,6 @@ class IndexCounter(RandomListTask):
 class AddNtoNthElement(RandomListTask):
     """
     Add n to the nth element, starting from 0.
-
-    Examples:
-
-        (6 2 7) - (6 3 9)
-        (8 8 1 3) - (8 9 3 6)
-        (3 9 3 8 1 7) - (3 10 5 11 5 12)
-
     """
     name = 'add_n_to_nth_element'
     input_type = ListOfInts
@@ -694,14 +560,6 @@ class AddNtoNthElement(RandomListTask):
 class Reverse(RandomListTask):
     """
     Reverse the list.
-
-    Examples:
-
-        (3 9 2 1 8 8) - (8 8 1 2 9 3)
-        (2 7 9 1) - (1 9 7 2)
-        (6 3 1 8 6 9 2 7) - (7 6 9 6 8 1 3 6)
-        (4 9 5 2 2 3 9) - (9 3 2 2 5 9 4)
-
     """
     name = 'reverse'
     input_type = ListOfInts
@@ -723,13 +581,6 @@ class Reverse(RandomListTask):
 class ReverseAndAddNtoNthElement(RandomListTask):
     """
     Reverse the list, then add n to the nth element starting from 0.
-
-    Examples:
-
-        (6 2 7) - (7 3 8)
-        (8 8 1 3) - (3 2 10 11)
-        (3 9 3 8 2 7) - (7 3 10 6 13 8)
-
     """
     name = 'reverse_and_add_n_to_nth_element'
     input_type = ListOfInts
@@ -752,13 +603,6 @@ class CountNumbersAndSort(RandomListTask):
     A flattened list of pairs (k n_k) specifying each distinct number k
     in the original list, followed by the number of times n_k that number k
     appears in the original list, in increasing order k.
-
-    Examples:
-
-        (3 9 3 8 2 7) - (2 1 3 2 7 1 8 1 9 1)
-        (8 8 1 3) - (1 1 3 1 8 2)
-        (7 3 1 4 4 1 1 9 7 1 7 1) - (1 5 3 1 4 2 7 3 9 1)
-
     """
     name = 'count_numbers_and_sort_by_number'
     input_type = ListOfInts
@@ -782,13 +626,6 @@ class CountNumbersAndSort(RandomListTask):
 class SortIncreasing(RandomListTask):
     """
     Original list sorted in increasing order, preserving repeats.
-
-    Examples:
-
-        (3 9 3 8 2 7) - (2 3 3 7 8 9)
-        (8 8 1 3) - (1 3 8 8)
-        (7 3 1 4 4 1 1 9 7 1 7 1) - (1 1 1 1 1 3 4 4 7 7 7 9)
-
     """
     name = 'sort_incr'
     input_type = ListOfInts
@@ -809,14 +646,6 @@ class SortIncreasing(RandomListTask):
 class SortAndDedupe(RandomListTask):
     """
     Original list sorted in increasing order, without repeats.
-
-    Examples:
-
-        (3 9 3 8 2 7) - (2 3 7 8 9)
-        (8 8 1 3) - (1 3 8)
-        (7 3 1 4 4 1 1 9 7 1 7 1) - (1 3 4 7 9)
-
-
     """
     name = 'sort_and_dedupe'
     input_type = ListOfInts
@@ -837,15 +666,6 @@ class SortAndDedupe(RandomListTask):
 class Length(RandomListTask):
     """
     Length of list.
-
-    Routine not from master list.
-
-    Examples:
-
-        (3 9 3 8 2 7) - 6
-        (8 8 1 3) - 4
-        (7 3 1 4 4 1 1 9 7 1 7 1) - 12
-
     """
     name = 'length'
     input_type = ListOfInts
