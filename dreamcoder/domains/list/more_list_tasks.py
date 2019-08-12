@@ -3,6 +3,7 @@ This module includes more list tasks from the following master list:
 https://docs.google.com/document/d/1D99neDlUYXm1v4-5pQVsjh8V2mWKHTCArQ7Q9u9ea8Q/edit
 """
 from abc import ABC, abstractmethod
+from functools import reduce
 import json
 import os
 import random
@@ -14,6 +15,7 @@ JSON_FILE = os.path.join(get_data_dir(), "more_list_tasks.json")
 
 Integer = 'int'
 ListOfInts = 'list-of-int'
+Boolean = 'bool'
 
 
 class SkipExample(Exception):
@@ -148,32 +150,294 @@ class RandomListTask(TaskGenerator, ABC):
       - num_examples (int): number of random lists to create
     """
     min_val = 0
-    max_val = 9
-    min_len = 2
-    max_len = 7
+    max_val = 99
+    min_len = 0
+    max_len = 10
     num_examples = 20
 
     def random_list(self):
-        list_range = range(random.randint(self.min_len, self.max_len))
+        list_range = range(random.randint(self.min_len, max(self.min_len, self.max_len)))
         return [random.randint(self.min_val, self.max_val) for _ in list_range]
 
     def make_examples(self):
         created = 0
         examples = []
         while created < self.num_examples:
+            i = self.random_list()
             try:
-                examples.append(self.example(self.random_list()))
+                o = self.example(i)
             except SkipExample:
                 continue
+            except Exception as e:
+                print('ERROR: unable to generate outputs for task ({}) and inputs ({})'.format(
+                    self.name, i))
+                raise e
             else:
+                examples.append(o)
                 created += 1
         return examples
 
 
-class RepeatN(ShuffledRangeTask):
-    name = 'repeat_n_n_times'
+class Length(RandomListTask):
+    """
+    Length of list.
+    """
+    name = 'length'
+    input_type = ListOfInts
+    output_type = Integer
+
+    def func(self, x):
+        return len(x)
+
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], 6),
+            ([8, 8, 1, 3], 4),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], 12),
+        ]
+
+
+class IsEmpty(RandomListTask):
+    name = 'is_empty'
+    input_type = ListOfInts
+    output_type = Boolean
+
+    def func(self, x):
+        return not bool(x)
+
+    @property
+    def unit_tests(self):
+        return [
+            ([], True),
+            ([1], False),
+            ([0], False),
+            ([2, 1, 7, 1, 8], False),
+        ]
+
+
+class Max(RandomListTask):
+    name = 'max'
     input_type = ListOfInts
     output_type = ListOfInts
+
+    def func(self, x):
+        if not x:
+            return []
+        return [max(x)]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([], []),
+            ([3, 9, 3, 8, 2, 7], [9]),
+            ([8, 8, 1, 3], [8]),
+            ([2, 7, 9, 1], [9]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [9]),
+            ([6, 3, 1, 6, 2, 7], [7]),
+            ([4, 6, 5, 2, 2, 3, 5], [6]),
+        ]
+
+
+class Min(RandomListTask):
+    name = 'min'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        if not x:
+            return []
+        return [min(x)]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([], []),
+            ([3, 9, 3, 8, 2, 7], [2]),
+            ([8, 8, 1, 3], [1]),
+            ([2, 7, 9, 1], [1]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [1]),
+            ([6, 3, 1, 6, 2, 7], [1]),
+            ([4, 6, 5, 2, 2, 3, 5], [2]),
+        ]
+
+
+class Reverse(RandomListTask):
+    """
+    Reverse the list.
+    """
+    name = 'reverse'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return list(reversed(x))
+
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 2, 1, 8, 8], [8, 8, 1, 2, 9, 3]),
+            ([2, 7, 9, 1], [1, 9, 7, 2]),
+            ([6, 3, 1, 8, 6, 9, 2, 7], [7, 2, 9, 6, 8, 1, 3, 6]),
+            ([4, 9, 5, 2, 2, 3, 9], [9, 3, 2, 2, 5, 9, 4]),
+        ]
+
+
+class Sort(RandomListTask):
+    """
+    Original list sorted in increasing order, preserving repeats.
+    """
+    name = 'sort'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return list(sorted(x))
+
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], [2, 3, 3, 7, 8, 9]),
+            ([8, 8, 1, 3], [1, 3, 8, 8]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [1, 1, 1, 1, 1, 3, 4, 4, 7, 7, 7, 9]),
+        ]
+
+
+class Unique(RandomListTask):
+    """
+    Remove duplicates from the original list, preserving order.
+    """
+    name = 'unique'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return list(dict.fromkeys(x))
+
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 1, 2, 2, 1], [2, 1]),
+            ([3, 1, 4], [3, 1, 4]),
+            ([3, 3, 3], [3]),
+            ([5, 9, 5, 4, 9, 2, 3], [5, 9, 4, 2, 3]),
+        ]
+
+
+class Sum(RandomListTask):
+    """
+    Sum from the original list.
+    """
+    name = 'sum'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return [sum(x)]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([1, 2, 3], [6]),
+            ([1, 2, 3, 4, 5], [15]),
+            ([7, 9, 3], [19]),
+            ([], [0]),
+        ]
+
+
+class Product(RandomListTask):
+    """
+    Product from the original list.
+    """
+    name = 'product'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        if not x:
+            return [0]
+        return [reduce(lambda a, b: a * b, x)]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 0, 4, 0, 3, 1, 3, 7, 0, 3, 3], [0]),
+            ([1, 2, 3], [6]),
+            ([1, 2, 3, 4, 5], [120]),
+            ([7, 9, 3], [189]),
+            ([], [0]),
+        ]
+
+
+class ConstEmpty(RandomListTask):
+    """
+    Const nil: always give back ()
+    """
+    name = 'const_empty'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return []
+
+    @property
+    def unit_tests(self):
+        return [
+            ([], []),
+            ([1, 2, 3], []),
+            ([5, 9, 4, 17], []),
+            ([3, 1, 4, 1, 5, 9], []),
+        ]
+
+
+class Const3(RandomListTask):
+    """
+    Const 3: always give back (3)
+    """
+    name = 'const_3'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return [3]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([], [3]),
+            ([1, 2, 3], [3]),
+            ([5, 9, 4, 17], [3]),
+            ([3, 1, 4, 1, 5, 9], [3]),
+        ]
+
+
+class Const123(RandomListTask):
+    """
+    Const (1 2 3): always give back (1 2 3)
+    """
+    name = 'const_1_2_3'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return [1, 2, 3]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([], [1, 2, 3]),
+            ([1, 2, 3], [1, 2, 3]),
+            ([5, 9, 4, 17], [1, 2, 3]),
+            ([3, 1, 4, 1, 5, 9], [1, 2, 3]),
+        ]
+
+
+class RepeatFirstFirst(RandomListTask):
+    name = 'repeat_first_first_times'
+    input_type = ListOfInts
+    output_type = ListOfInts
+    min_len = 1
+    max_len = 1
 
     def func(self, x):
         x0 = x[0]
@@ -187,13 +451,98 @@ class RepeatN(ShuffledRangeTask):
         ]
 
 
-class CountDown(ShuffledRangeTask):
-    name = 'count_down_from_n'
+class RepeatFirstSecond(RandomListTask):
+    name = 'repeat_first_second_times'
+    input_type = ListOfInts
+    output_type = ListOfInts
+    min_len = 2
+    max_len = 2
+
+    def func(self, x):
+        x0 = x[0]
+        x1 = x[1]
+        return [x0 for _ in range(x1)]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 2], [2, 2]),
+            ([2, 3], [2, 2, 2]),
+            ([5, 5], [5, 5, 5, 5, 5]),
+            ([5, 1], [5]),
+        ]
+
+
+class RepeatMaxMin(RandomListTask):
+    name = 'repeat_max_min_times'
     input_type = ListOfInts
     output_type = ListOfInts
 
     def func(self, x):
-        return list(reversed([n for n in range(1, x[0] + 1)]))
+        if not x:
+            return []
+        return [max(x) for _ in range(min(x))]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 7, 4, 9, 9, 3], [9, 9, 9]),
+            ([7, 0, 0, 1, 5], []),
+            ([2, 1], [2]),
+            ([8, 6, 4], [8, 8, 8, 8]),
+        ]
+
+
+class RepeatIndex5Index3Times(RandomListTask):
+    name = 'repeat_index_5_index_3_times'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        if len(x) < 6:
+            return []
+        return [x[5] for _ in range(x[3])]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 7, 4, 9, 9, 3], [3, 3, 3, 3, 3, 3, 3, 3, 3]),
+            ([7, 0, 0, 1, 5], []),
+            ([2, 1], []),
+            ([8, 6, 4], []),
+            ([0, 9, 2, 4, 4, 5], [5, 5, 5, 5]),
+            ([0, 1, 2, 3, 4, 3], [3, 3, 3]),
+        ]
+
+
+class CountUp(RandomListTask):
+    name = 'count_up_to_n'
+    input_type = ListOfInts
+    output_type = ListOfInts
+    min_len = 1
+    max_len = 1
+
+    def func(self, x):
+        return list(range(1, x[0] + 1))
+
+    @property
+    def unit_tests(self):
+        return [
+            ([1], [1]),
+            ([5], [1, 2, 3, 4, 5]),
+            ([3], [1, 2, 3]),
+        ]
+
+
+class CountDown(RandomListTask):
+    name = 'count_down_from_n'
+    input_type = ListOfInts
+    output_type = ListOfInts
+    min_len = 1
+    max_len = 1
+
+    def func(self, x):
+        return list(range(x[0], 0, -1))
 
     @property
     def unit_tests(self):
@@ -203,29 +552,352 @@ class CountDown(ShuffledRangeTask):
         ]
 
 
-class LastElement(RandomListTask):
-    name = 'last_element_of_list'
+class CountDownBy2(RandomListTask):
+    name = 'count_down_from_n_by_2'
     input_type = ListOfInts
-    output_type = Integer
+    output_type = ListOfInts
+    min_len = 1
+    max_len = 1
 
     def func(self, x):
-        return x[-1]
+        return list(range(x[0], 0, -2))
 
     @property
     def unit_tests(self):
         return [
-            ([6, 4, 9, 1, 4], 4),
-            ([7, 3, 3, 2], 2),
-            ([8, 1], 1),
+            ([6], [6, 4, 2]),
+            ([9], [9, 7, 5, 3, 1]),
+            ([18], [18, 16, 14, 12, 10, 8, 6, 4, 2]),
         ]
 
 
-class HeadthElement(RandomListTask):
+class Prepend0(RandomListTask):
+    name = 'prepend_0'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return [0] + x
+
+    @property
+    def unit_tests(self):
+        return [
+            ([3], [0, 3]),
+            ([0, 4], [0, 0, 4]),
+            ([], [0]),
+            ([6, 7, 4, 9, 9, 3], [0, 6, 7, 4, 9, 9, 3]),
+            ([7, 0, 0, 1, 5], [0, 7, 0, 0, 1, 5]),
+            ([2, 1], [0, 2, 1]),
+            ([8, 6, 4], [0, 8, 6, 4]),
+            ([6, 2], [0, 6, 2]),
+            ([9, 6, 9, 8], [0, 9, 6, 9, 8]),
+            ([9], [0, 9]),
+        ]
+
+
+class Prepend123(RandomListTask):
+    name = 'prepend_123'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return [1, 2, 3] + x
+
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 1, 3, 9, 2], [1, 2, 3, 2, 1, 3, 9, 2]),
+            ([], [1, 2, 3]),
+            ([5, 7, 1], [1, 2, 3, 5, 7, 1]),
+            ([7, 4], [1, 2, 3, 7, 4]),
+        ]
+
+
+class Append3(RandomListTask):
+    name = 'append_3'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return x + [3]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([0, 0, 6], [0, 0, 6, 3]),
+            ([0, 9, 2, 4, 4, 5], [0, 9, 2, 4, 4, 5, 3]),
+            ([5, 3, 8, 2], [5, 3, 8, 2, 3]),
+            ([7, 1, 3], [7, 1, 3, 3]),
+            ([5], [5, 3]),
+            ([2, 1, 2, 3, 9], [2, 1, 2, 3, 9, 3]),
+            ([6], [6, 3]),
+            ([9, 3, 6, 8, 3], [9, 3, 6, 8, 3, 3]),
+            ([5, 1, 4, 1], [5, 1, 4, 1, 3]),
+            ([1, 6, 8], [1, 6, 8, 3]),
+        ]
+
+
+class Append123(RandomListTask):
+    name = 'append_123'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return x + [1, 2, 3]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 1, 3, 9, 2], [2, 1, 3, 9, 2, 1, 2, 3]),
+            ([], [1, 2, 3]),
+            ([5, 7, 1], [5, 7, 1, 1, 2, 3]),
+            ([7, 4], [7, 4, 1, 2, 3]),
+        ]
+
+
+class RotateLeft1(RandomListTask):
+    name = 'rotate_left_1'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        if len(x) < 1:
+            return []
+        return x[1:] + [x[0]]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([1, 4, 1, 4, 2, 9], [4, 1, 4, 2, 9, 1]),
+            ([2, 7, 3, 1], [7, 3, 1, 2]),
+            ([4, 1, 2, 3, 5, 9, 8], [1, 2, 3, 5, 9, 8, 4]),
+            ([3, 3, 4], [3, 4, 3]),
+            ([7, 9, 3, 5, 2, 19, 1, 2, 0, 2], [9, 3, 5, 2, 19, 1, 2, 0, 2, 7]),
+            ([6, 3, 2, 3, 4, 1, 6, 9], [3, 2, 3, 4, 1, 6, 9, 6]),
+            ([1, 4, 3, 8, 3, 8], [4, 3, 8, 3, 8, 1]),
+        ]
+
+
+class RotateRight1(RandomListTask):
+    name = 'rotate_right_1'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        if len(x) < 1:
+            return []
+        return [x[-1]] + x[:-1]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([1, 4, 1, 4, 2, 9], [9, 1, 4, 1, 4, 2]),
+            ([2, 7, 3, 1], [1, 2, 7, 3]),
+            ([4, 1, 2, 3, 5, 9, 8], [8, 4, 1, 2, 3, 5, 9]),
+            ([3, 3, 4], [4, 3, 3]),
+            ([7, 9, 3, 5, 2, 19, 1, 2, 0, 2], [2, 7, 9, 3, 5, 2, 19, 1, 2, 0]),
+            ([6, 3, 2, 3, 4, 1, 6, 9], [9, 6, 3, 2, 3, 4, 1, 6]),
+            ([1, 4, 3, 8, 3, 8], [8, 1, 4, 3, 8, 3]),
+        ]
+
+
+class RotateRightHeadElements(RandomListTask):
+    name = 'rotate_right_head_elements'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        if len(x) < 1:
+            return []
+        head = x[0]
+        return [x[(i - head) % len(x)] for i, _ in enumerate(x)]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([2, 6, 8, 2, 4], [2, 4, 2, 6, 8]),
+            ([3, 1, 7, 2], [1, 7, 2, 3]),
+            ([2, 1, 7, 3], [7, 3, 2, 1]),
+            ([1, 9, 3], [3, 1, 9]),
+            ([2, 1, 3], [1, 3, 2]),
+            ([3, 1, 3], [3, 1, 3]),
+            ([8, 1, 3], [1, 3, 8]),
+            ([3, 2, 4, 3], [2, 4, 3, 3]),
+            ([5, 3, 5, 2, 19, 1, 2, 0, 2], [19, 1, 2, 0, 2, 5, 3, 5, 2]),
+            ([7, 3, 2, 3, 4, 1, 6, 9], [3, 2, 3, 4, 1, 6, 9, 7]),
+            ([3, 2, 3, 4, 1, 6, 9, 7], [6, 9, 7, 3, 2, 3, 4, 1]),
+            ([4, 4, 3, 8, 3, 8, 7], [8, 3, 8, 7, 4, 4, 3]),
+        ]
+
+
+class Append0AppendReversed(RandomListTask):
+    name = 'append_0_append_reversed'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return x + [0] + list(reversed(x))
+
+    @property
+    def unit_tests(self):
+        return [
+            ([8], [8, 0, 8]),
+            ([9, 6, 8, 2, 4], [9, 6, 8, 2, 4, 0, 4, 2, 8, 6, 9]),
+            ([3, 1, 7, 2], [3, 1, 7, 2, 0, 2, 7, 1, 3]),
+            ([5], [5, 0, 5]),
+            ([9], [9, 0, 9]),
+            ([8, 9, 3], [8, 9, 3, 0, 3, 9, 8]),
+            ([3], [3, 0, 3]),
+            ([7], [7, 0, 7]),
+            ([3, 2, 4, 3], [3, 2, 4, 3, 0, 3, 4, 2, 3]),
+            ([3, 5, 7], [3, 5, 7, 0, 7, 5, 3]),
+        ]
+
+
+# TODO:
+#
+# Insert (second xs) (first xs) xs
+#
+# (9 1) - (9)
+# (9 1 3) - (9 3)
+# (7 2 4) - (4 7)
+# (5 4 3 1 5 6 8 3) - (3 1 5 6 5 8 3)
+#
+# Append (if (== (head xs) 8) ‘(8) ‘()) (Prepend (if (== (head xs) 8) ‘(8) ‘()) xs): Conditionally bracket with 8s
+#
+# (8 8) -> (8 8)
+# (3 4 6 6 2 8) -> (8 3 4 6 6 2 8)
+# (9 4 6 7 7 8) -> (8 9 4 6 7 7 8)
+# (8 1 5) -> (8 1 5 8)
+# (8 2 2 7 7 3) -> (8 2 2 7 7 3 8)
+# (8 3 8 1 4 3) -> (8 3 8 1 4 3 8)
+# (4 3 2 8) -> (8 4 3 2 8)
+# (7 7 5 7 8) -> (8 7 7 5 7 8)
+# (8 2 7 7) -> (8 2 7 7 8)
+# (9 5 1 1 5) -> (8 9 5 1 1 5 8)
+
+
+class Insert1s(RandomListTask):
+    name = 'insert_1_after_each_element'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return [j for i in x for j in [i, 1]]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 2, 7], [6, 1, 2, 1, 7, 1]),
+            ([8, 8, 1, 3], [8, 1, 8, 1, 1, 1, 3, 1]),
+        ]
+
+
+class InsertIndex(RandomListTask):
+    name = 'insert_index_after_each_element'
+    input_type = ListOfInts
+    output_type = ListOfInts
+
+    def func(self, x):
+        return [j for i, n in enumerate(x, start=1) for j in [n, i]]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 2, 7], [6, 1, 2, 2, 7, 3]),
+            ([8, 8, 1, 3], [8, 1, 8, 2, 1, 3, 3, 4]),
+        ]
+
+
+class FirstElement(RandomListTask):
+    name = 'first'
+    input_type = ListOfInts
+    output_type = ListOfInts
+    min_len = 1
+
+    def func(self, x):
+        return [x[0]]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], [3]),
+            ([8, 8, 1, 3], [8]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [7]),
+            ([2, 7, 9, 1], [2]),
+            ([6, 3, 1, 8, 6, 2, 7], [6]),
+            ([4, 9, 5, 2, 2, 3, 9], [4]),
+        ]
+
+
+class SecondElement(RandomListTask):
+    name = 'second'
+    input_type = ListOfInts
+    output_type = ListOfInts
+    min_len = 2
+
+    def func(self, x):
+        return [x[1]]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], [9]),
+            ([8, 8, 1, 3], [8]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [3]),
+            ([2, 7, 9, 1], [7]),
+            ([6, 3, 1, 8, 6, 2, 7], [3]),
+            ([4, 9, 5, 2, 2, 3, 9], [9]),
+        ]
+
+
+class ThirdElement(RandomListTask):
+    name = 'third'
+    input_type = ListOfInts
+    output_type = ListOfInts
+    min_len = 3
+
+    def func(self, x):
+        return [x[2]]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([3, 9, 3, 8, 2, 7], [3]),
+            ([8, 8, 1, 3], [1]),
+            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [1]),
+            ([2, 7, 9, 1], [9]),
+            ([6, 3, 1, 8, 6, 2, 7], [1]),
+            ([4, 9, 5, 2, 2, 3, 9], [5]),
+        ]
+
+
+class LastElement(RandomListTask):
+    name = 'last'
+    input_type = ListOfInts
+    output_type = Integer
+    min_len = 1
+
+    def func(self, x):
+        return [x[-1]]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([6, 4, 9, 1, 4], [4]),
+            ([7, 3, 3, 2], [2]),
+            ([8, 1], [1]),
+        ]
+
+
+class HeadthElementOfTail(RandomListTask):
     name = 'headth_element_of_tail'
     input_type = ListOfInts
     output_type = Integer
 
     def func(self, x):
+        if not x:
+            raise SkipExample
         head = x[0]
         if head - 1 < 0:
             raise SkipExample
@@ -252,6 +924,8 @@ class CountHead(RandomListTask):
     num_examples = 100  # fails under 20 examples, trying a higher limit
 
     def func(self, x):
+        if not x:
+            raise SkipExample
         head = x[0]
         tail = x[1:]
         return sum(1 for n in tail if n == head)
@@ -377,26 +1051,6 @@ class FlattenMapRangeHead(RandomListTask):
         ]
 
 
-class Minus2Series(RandomListTask):
-    name = 'minus_2_series'
-    input_type = ListOfInts
-    output_type = ListOfInts
-
-    def func(self, x):
-        n = x[0]
-        if n in [0, 1, 2]:
-            return [n]
-        return list(range(n, 0, -2))
-
-    @property
-    def unit_tests(self):
-        return [
-            ([6], [6, 4, 2]),
-            ([9], [9, 7, 5, 3, 1]),
-            ([18], [18, 16, 14, 12, 10, 8, 6, 4, 2]),
-        ]
-
-
 class CumulativeProduct(RandomListTask):
     name = 'cumulative_product'
     input_type = ListOfInts
@@ -453,38 +1107,6 @@ class FlattenMapRepeatN(RandomListTask):
         ]
 
 
-class Insert1s(RandomListTask):
-    name = 'insert_1_after_each_element'
-    input_type = ListOfInts
-    output_type = ListOfInts
-
-    def func(self, x):
-        return [j for i in x for j in [i, 1]]
-
-    @property
-    def unit_tests(self):
-        return [
-            ([6, 2, 7], [6, 1, 2, 1, 7, 1]),
-            ([8, 8, 1, 3], [8, 1, 8, 1, 1, 1, 3, 1]),
-        ]
-
-
-class InsertIndex(RandomListTask):
-    name = 'insert_index_after_each_element'
-    input_type = ListOfInts
-    output_type = ListOfInts
-
-    def func(self, x):
-        return [j for i, n in enumerate(x, start=1) for j in [n, i]]
-
-    @property
-    def unit_tests(self):
-        return [
-            ([6, 2, 7], [6, 1, 2, 2, 7, 3]),
-            ([8, 8, 1, 3], [8, 1, 8, 2, 1, 3, 3, 4]),
-        ]
-
-
 class CountRunLengths(RandomListTask):
     """
     Replace each run of identical elements with the element and the length of the run.
@@ -522,6 +1144,8 @@ class IndexCounter(RandomListTask):
     min_val = 1  # set min val to 1 since examples don't cover 0
 
     def func(self, x):
+        if not x:
+            raise SkipExample
         output = [0 for _ in range(max(x))]
         for n in x:
             output[n - 1] += 1
@@ -554,27 +1178,6 @@ class AddNtoNthElement(RandomListTask):
             ([6, 2, 7], [6, 3, 9]),
             ([8, 8, 1, 3], [8, 9, 3, 6]),
             ([3, 9, 3, 8, 1, 7], [3, 10, 5, 11, 5, 12]),
-        ]
-
-
-class Reverse(RandomListTask):
-    """
-    Reverse the list.
-    """
-    name = 'reverse'
-    input_type = ListOfInts
-    output_type = ListOfInts
-
-    def func(self, x):
-        return list(reversed(x))
-
-    @property
-    def unit_tests(self):
-        return [
-            ([3, 9, 2, 1, 8, 8], [8, 8, 1, 2, 9, 3]),
-            ([2, 7, 9, 1], [1, 9, 7, 2]),
-            ([6, 3, 1, 8, 6, 9, 2, 7], [7, 2, 9, 6, 8, 1, 3, 6]),
-            ([4, 9, 5, 2, 2, 3, 9], [9, 3, 2, 2, 5, 9, 4]),
         ]
 
 
@@ -623,26 +1226,6 @@ class CountNumbersAndSort(RandomListTask):
         ]
 
 
-class SortIncreasing(RandomListTask):
-    """
-    Original list sorted in increasing order, preserving repeats.
-    """
-    name = 'sort_incr'
-    input_type = ListOfInts
-    output_type = ListOfInts
-
-    def func(self, x):
-        return list(sorted(x))
-
-    @property
-    def unit_tests(self):
-        return [
-            ([3, 9, 3, 8, 2, 7], [2, 3, 3, 7, 8, 9]),
-            ([8, 8, 1, 3], [1, 3, 8, 8]),
-            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], [1, 1, 1, 1, 1, 3, 4, 4, 7, 7, 7, 9]),
-        ]
-
-
 class SortAndDedupe(RandomListTask):
     """
     Original list sorted in increasing order, without repeats.
@@ -663,26 +1246,6 @@ class SortAndDedupe(RandomListTask):
         ]
 
 
-class Length(RandomListTask):
-    """
-    Length of list.
-    """
-    name = 'length'
-    input_type = ListOfInts
-    output_type = Integer
-
-    def func(self, x):
-        return len(x)
-
-    @property
-    def unit_tests(self):
-        return [
-            ([3, 9, 3, 8, 2, 7], 6),
-            ([8, 8, 1, 3], 4),
-            ([7, 3, 1, 4, 4, 1, 1, 9, 7, 1, 7, 1], 12),
-        ]
-
-
 def reformat_examples(example_str):
     """
     Use to convert examples in Josh's Google Doc to Python format for unit tests.
@@ -690,15 +1253,24 @@ def reformat_examples(example_str):
     lines = example_str.split('\n')
     lines = [l.strip() for l in lines]
     lines = list(filter(None, lines))
+    out = []
     for line in lines:
         line = line.replace('(', '[')
         line = line.replace(')', ']')
-        i, o = line.split('-')
+        if '->' in line:
+            split_char = '->'
+        elif '-' in line:
+            split_char = '-'
+        else:
+            raise ValueError('Missing split char in line: {}'.format(line))
+        i, o = line.split(split_char)
         i = i.strip()
         i = i.replace(' ', ', ')
         o = o.strip()
         o = o.replace(' ', ', ')
-        print('    (' + i + ', ' + o + '),')
+        out.append('    (' + i + ', ' + o + '),')
+    print('\n'.join(out))
+    return out
 
 
 def generate_multiple(task_cls, count):
@@ -712,30 +1284,54 @@ def generate_multiple(task_cls, count):
 
 def create_more_list_tasks():
     tasks = [
-        RepeatN(),
+        Length(),
+        IsEmpty(),
+        Max(),
+        Min(),
+        Reverse(),
+        Sort(),
+        Unique(),
+        Sum(),
+        Product(),
+        ConstEmpty(),
+        Const3(),
+        Const123(),
+        RepeatFirstFirst(),
+        RepeatFirstSecond(),
+        RepeatMaxMin(),
+        RepeatIndex5Index3Times(),
+        CountUp(),
         CountDown(),
+        CountDownBy2(),
+        Prepend0(),
+        Prepend123(),
+        Append3(),
+        Append123(),
+        RotateLeft1(),
+        RotateRight1(),
+        RotateRightHeadElements(),
+        Append0AppendReversed(),
+        Insert1s(),
+        InsertIndex(),
+        FirstElement(),
+        SecondElement(),
+        ThirdElement(),
         LastElement(),
-        HeadthElement(),
+        HeadthElementOfTail(),
         CountHead(),
         FlattenMapRange(),
         FlattenMapRangeReversed(),
         FlattenMapRangeSeries(),
         FlattenMapRangeHead(),
-        Minus2Series(),
         CumulativeProduct(),
         CumulativeSum(),
         FlattenMapRepeatN(),
-        Insert1s(),
-        InsertIndex(),
         CountRunLengths(),
         IndexCounter(),
         AddNtoNthElement(),
-        Reverse(),
         ReverseAndAddNtoNthElement(),
         CountNumbersAndSort(),
-        SortIncreasing(),
         SortAndDedupe(),
-        Length()
     ]
 
     # shuffle
