@@ -66,6 +66,7 @@ class TaskGenerator(ABC):
         assert self.input_type is not None
         assert self.output_type is not None
         self.examples = self.make_examples()
+        self.verify()
 
     @abstractmethod
     def func(self, inputs):
@@ -91,6 +92,30 @@ class TaskGenerator(ABC):
 
     def json(self):
         return self._to_json(self.name, self.input_type, self.output_type, self.examples)
+
+    @property
+    def unit_tests(self):
+        """
+        Sample input-output pairs for function verification.
+
+        Note that actual input-output example pairs are generated, these are just for
+        verifying that the function works properly.
+        """
+        return []
+
+    def verify(self):
+        """
+        Verify that the function works properly on sample input-output pairs.
+        """
+        for i, o in self.unit_tests:
+            try:
+                assert self.func(i) == o
+            except AssertionError as e:
+                msg = (
+                    'ERROR: Unable to verify that sample inputs ({}) '
+                    'evaluate to outputs ({}) for task ({})')
+                print(msg.format(i, o, self.name))
+                raise e
 
 
 class ShuffledRangeTask(TaskGenerator, ABC):
@@ -154,6 +179,13 @@ class RepeatN(ShuffledRangeTask):
     def func(self, x):
         x0 = x[0]
         return [x0 for _ in range(x0)]
+
+    @property
+    def unit_tests(self):
+        return [
+            ([2], [2, 2]),
+            ([5], [5, 5, 5, 5, 5]),
+        ]
 
 
 class CountDown(ShuffledRangeTask):
