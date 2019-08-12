@@ -703,38 +703,32 @@ def generate_multiple(task_cls, count):
 
 
 def create_more_list_tasks():
-    task_classes = [
-        RepeatN,
-        CountDown,
-        LastElement,
-        HeadthElement,
-        CountHead,
-        FlattenMapRange,
-        FlattenMapRangeReversed,
-        FlattenMapRangeSeries,
-        FlattenMapRangeHead,
-        Minus2Series,
-        CumulativeProduct,
-        CumulativeSum,
-        FlattenMapRepeatN,
-        Insert1s,
-        InsertIndex,
-        CountRunLengths,
-        IndexCounter,
-        AddNtoNthElement,
-        Reverse,
-        ReverseAndAddNtoNthElement,
-        CountNumbersAndSort,
-        SortIncreasing,
-        SortAndDedupe,
-        Length
+    tasks = [
+        RepeatN(),
+        CountDown(),
+        LastElement(),
+        HeadthElement(),
+        CountHead(),
+        FlattenMapRange(),
+        FlattenMapRangeReversed(),
+        FlattenMapRangeSeries(),
+        FlattenMapRangeHead(),
+        Minus2Series(),
+        CumulativeProduct(),
+        CumulativeSum(),
+        FlattenMapRepeatN(),
+        Insert1s(),
+        InsertIndex(),
+        CountRunLengths(),
+        IndexCounter(),
+        AddNtoNthElement(),
+        Reverse(),
+        ReverseAndAddNtoNthElement(),
+        CountNumbersAndSort(),
+        SortIncreasing(),
+        SortAndDedupe(),
+        Length()
     ]
-
-    # generate 10 of each type of task
-    tasks = map(lambda x: generate_multiple(x, 10), task_classes)
-
-    # flatten
-    tasks = [item for sublist in tasks for item in sublist]
 
     # shuffle
     random.shuffle(tasks)
